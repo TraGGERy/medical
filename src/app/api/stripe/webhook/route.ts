@@ -117,8 +117,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     stripeSubscriptionId: subscription.id,
     stripeCustomerId: subscription.customer as string,
     status: subscription.status,
-    currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-    currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+    currentPeriodStart: new Date((subscription as Stripe.Subscription & { current_period_start: number }).current_period_start * 1000),
+    currentPeriodEnd: new Date((subscription as Stripe.Subscription & { current_period_end: number }).current_period_end * 1000),
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   }).onConflictDoUpdate({
     target: userSubscriptions.userId,
@@ -127,8 +127,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       stripeSubscriptionId: subscription.id,
       stripeCustomerId: subscription.customer as string,
       status: subscription.status,
-      currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-      currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+      currentPeriodStart: new Date((subscription as Stripe.Subscription & { current_period_start: number }).current_period_start * 1000),
+      currentPeriodEnd: new Date((subscription as Stripe.Subscription & { current_period_end: number }).current_period_end * 1000),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       updatedAt: new Date(),
     },
@@ -149,8 +149,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   await db.update(userSubscriptions)
     .set({
       status: subscription.status,
-      currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-      currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+      currentPeriodStart: new Date((subscription as Stripe.Subscription & { current_period_start: number }).current_period_start * 1000),
+      currentPeriodEnd: new Date((subscription as Stripe.Subscription & { current_period_end: number }).current_period_end * 1000),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       updatedAt: new Date(),
     })
@@ -179,7 +179,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-  const subscriptionId = (invoice as any).subscription as string;
+  const subscriptionId = (invoice as Stripe.Invoice & { subscription: string }).subscription;
   
   if (subscriptionId) {
     // Update subscription status to active
@@ -195,7 +195,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-  const subscriptionId = (invoice as any).subscription as string;
+  const subscriptionId = (invoice as Stripe.Invoice & { subscription: string }).subscription;
   
   if (subscriptionId) {
     // Update subscription status to past_due

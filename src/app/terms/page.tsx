@@ -44,8 +44,7 @@ export default function TermsPage() {
             
             <h2>1. Acceptance of Terms</h2>
             <p>
-              By accessing and using DiagnoGenie ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. 
-              If you do not agree to abide by the above, please do not use this service.
+              By accessing and using DiagnoGenie (&ldquo;the Service&rdquo;), you accept and agree to be bound by the terms and provision of this agreement.
             </p>
 
             <h2>2. Description of Service</h2>

@@ -1,5 +1,17 @@
 import jsPDF from 'jspdf';
 
+interface SymptomObject {
+  name: string;
+  [key: string]: unknown;
+}
+
+interface AiAnalysisObject {
+  analysis?: string;
+  diagnosis?: string;
+  summary?: string;
+  [key: string]: unknown;
+}
+
 interface HealthReport {
   id: string;
   condition: string;
@@ -9,8 +21,8 @@ interface HealthReport {
   riskLevel: string;
   confidence: number;
   summary: string;
-  symptoms?: string | string[];
-  aiAnalysis?: string | any;
+  symptoms?: string | string[] | SymptomObject[];
+  aiAnalysis?: string | AiAnalysisObject;
   recommendations?: string | string[];
   urgencyLevel?: string | number;
   createdAt?: string;
@@ -52,34 +64,10 @@ export const generateHealthReportPDF = (report: HealthReport): void => {
     }
   };
 
-  // Helper function to convert symptoms to formatted string
-  const getSymptomsText = (symptoms?: string | string[]): string => {
-    if (!symptoms) return 'No symptoms recorded';
-    if (Array.isArray(symptoms)) {
-      return symptoms.map(symptom => {
-        // Handle both string symptoms and object symptoms
-        if (typeof symptom === 'string') {
-          return `• ${symptom}`;
-        } else if (typeof symptom === 'object' && symptom !== null && 'name' in symptom) {
-          return `• ${(symptom as any).name}`;
-        }
-        return `• ${symptom}`;
-      }).join('\n');
-    }
-    return symptoms;
-  };
 
-  // Helper function to convert recommendations to formatted string
-  const getRecommendationsText = (recommendations?: string | string[]): string => {
-    if (!recommendations) return 'No recommendations available';
-    if (Array.isArray(recommendations)) {
-      return recommendations.map(rec => `• ${rec}`).join('\n');
-    }
-    return recommendations;
-  };
 
   // Helper function to convert AI analysis to formatted string
-  const getAiAnalysisText = (aiAnalysis?: string | any): string => {
+  const getAiAnalysisText = (aiAnalysis?: string | AiAnalysisObject): string => {
     if (!aiAnalysis) return 'No analysis available';
     if (typeof aiAnalysis === 'string') return aiAnalysis;
     
@@ -312,7 +300,7 @@ export const generateHealthReportPDF = (report: HealthReport): void => {
         // Symptom text
         const symptomText = typeof symptom === 'string' ? symptom : 
                           (symptom && typeof symptom === 'object' && 'name' in symptom) ? 
-                          (symptom as any).name : 'Unknown symptom';
+                          (symptom as SymptomObject).name : 'Unknown symptom';
         
         doc.setTextColor(55, 65, 81); // gray-700
         doc.setFontSize(11);

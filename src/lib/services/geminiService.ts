@@ -51,6 +51,22 @@ export interface HealthReport {
   followUpActions: string[];
 }
 
+export interface FullDiagnosticResponse {
+  urgencyLevel: 'low' | 'medium' | 'high' | 'emergency';
+  analysis: string;
+  possibleConditions: string[];
+  recommendations: string[];
+  lifestyleRecommendations: string[];
+  followUpPlan: string[];
+  redFlags: string;
+  documentAnalysis: string;
+  negligenceAssessment: string | null;
+  disclaimer: string;
+  diagnosticType: 'full';
+}
+
+
+
 export class GeminiHealthService {
   private model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
   private visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
@@ -69,7 +85,7 @@ export class GeminiHealthService {
     }
   }
 
-  async analyzeFullDiagnostic(request: FullDiagnosticRequest): Promise<any> {
+  async analyzeFullDiagnostic(request: FullDiagnosticRequest): Promise<FullDiagnosticResponse> {
     try {
       // Check if we have images to process
       const hasImages = request.uploadedFiles?.some(file => file.isImage) || false;
@@ -85,7 +101,7 @@ export class GeminiHealthService {
     }
   }
 
-  private async analyzeWithVision(request: FullDiagnosticRequest): Promise<any> {
+  private async analyzeWithVision(request: FullDiagnosticRequest): Promise<FullDiagnosticResponse> {
     try {
       const prompt = this.buildFullDiagnosticPrompt(request);
       
@@ -97,8 +113,8 @@ export class GeminiHealthService {
         for (const file of request.uploadedFiles) {
           if (file.isImage && file.base64) {
             parts.push({
-              inlineData: {
-                mimeType: file.type,
+              inline_data: {
+                mime_type: file.type,
                 data: file.base64
               }
             });
@@ -117,7 +133,7 @@ export class GeminiHealthService {
     }
   }
 
-  private async analyzeWithText(request: FullDiagnosticRequest): Promise<any> {
+  private async analyzeWithText(request: FullDiagnosticRequest): Promise<FullDiagnosticResponse> {
     try {
       const prompt = this.buildFullDiagnosticPrompt(request);
       const result = await this.model.generateContent(prompt);
@@ -262,7 +278,7 @@ export class GeminiHealthService {
     `;
   }
 
-  private parseFullDiagnosticResponse(text: string): any {
+  private parseFullDiagnosticResponse(text: string): FullDiagnosticResponse {
     try {
       // Try to extract JSON from the response
       const jsonMatch = text.match(/\{[\s\S]*\}/);

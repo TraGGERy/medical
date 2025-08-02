@@ -1,9 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, Download, Share2, Eye, Calendar, Clock, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
 import { generateHealthReportPDF } from '@/lib/utils/pdfGenerator';
+import { HealthAnalysisResponse, FullDiagnosticResponse } from '@/lib/services/geminiService';
+
+interface AiAnalysis {
+  analysis?: string;
+  possibleConditions?: string[];
+  redFlags?: string;
+  documentAnalysis?: string;
+  negligenceAssessment?: string | null;
+  disclaimer?: string;
+  diagnosticType?: 'basic' | 'full';
+}
 
 interface HealthReport {
   id: string;
@@ -15,12 +25,12 @@ interface HealthReport {
   summary: string;
   confidence: number;
   symptoms?: string[];
-  aiAnalysis?: any;
+  aiAnalysis?: AiAnalysis;
   recommendations?: string[];
   urgencyLevel?: number;
   followUpRequired?: boolean;
   doctorRecommended?: boolean;
-  fullReport?: any;
+  fullReport?: HealthAnalysisResponse | FullDiagnosticResponse;
 }
 
 interface HealthCheckHistoryProps {
@@ -53,7 +63,7 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
   };
 
   // Fetch reports from API
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -85,12 +95,12 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, statusFilter, searchTerm, reportsPerPage]);
 
   // Load reports on component mount and when filters change
   useEffect(() => {
     fetchReports();
-  }, [currentPage, statusFilter, searchTerm]);
+  }, [fetchReports]);
 
   // Handle search with debouncing
   useEffect(() => {
@@ -100,7 +110,7 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, fetchReports]);
 
   // Use only fetched reports from the database
   const displayReports = reports;
@@ -125,7 +135,13 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
 
   const downloadReport = (report: HealthReport) => {
     try {
-      generateHealthReportPDF(report);
+      generateHealthReportPDF({
+        ...report,
+        aiAnalysis: report.aiAnalysis ? {
+          ...report.aiAnalysis,
+          [report.aiAnalysis.diagnosticType || 'basic']: report.aiAnalysis
+        } : undefined
+      });
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');

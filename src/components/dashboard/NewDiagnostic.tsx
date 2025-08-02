@@ -2,9 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { HealthAnalysisResponse, FullDiagnosticResponse } from '@/lib/services/geminiService';
 
 interface NewDiagnosticProps {
   onComplete: () => void;
+}
+
+interface BasicAnalysisData {
+  analysis: HealthAnalysisResponse;
+}
+
+interface FullDiagnosticData {
+  analysis: FullDiagnosticResponse;
 }
 
 export default function NewDiagnostic({ onComplete }: NewDiagnosticProps) {
@@ -101,23 +110,26 @@ export default function NewDiagnostic({ onComplete }: NewDiagnosticProps) {
     }
   };
 
-  const saveReportAndRedirect = async (analysisData: any, diagnosticType: 'basic' | 'full') => {
+  const saveReportAndRedirect = async (analysisData: HealthAnalysisResponse | FullDiagnosticResponse, diagnosticType: 'basic' | 'full') => {
     setIsSavingReport(true);
     try {
+      // Handle different response types
+      const isFullDiagnostic = 'redFlags' in analysisData;
+      
       const reportData = {
         title: `${diagnosticType === 'basic' ? 'Basic' : 'Comprehensive'} Health Analysis - ${new Date().toLocaleDateString()}`,
         symptoms: symptoms.split(',').map(s => s.trim()).filter(s => s.length > 0),
         aiAnalysis: {
           analysis: analysisData.analysis,
           possibleConditions: analysisData.possibleConditions,
-          redFlags: analysisData.redFlags,
-          documentAnalysis: analysisData.documentAnalysis,
-          negligenceAssessment: analysisData.negligenceAssessment,
+          redFlags: isFullDiagnostic ? (analysisData as FullDiagnosticResponse).redFlags : '',
+          documentAnalysis: isFullDiagnostic ? (analysisData as FullDiagnosticResponse).documentAnalysis : '',
+          negligenceAssessment: isFullDiagnostic ? (analysisData as FullDiagnosticResponse).negligenceAssessment : null,
           disclaimer: analysisData.disclaimer,
           diagnosticType: diagnosticType
         },
         urgencyLevel: analysisData.urgencyLevel,
-        confidence: analysisData.confidence || 85,
+        confidence: 85, // Default confidence since it's not in the response interfaces
         recommendations: analysisData.recommendations || [],
         followUpRequired: analysisData.urgencyLevel === 'high' || analysisData.urgencyLevel === 'emergency',
         doctorRecommended: analysisData.urgencyLevel === 'emergency'
@@ -156,12 +168,12 @@ export default function NewDiagnostic({ onComplete }: NewDiagnosticProps) {
     }
   };
 
-  const displayBasicResults = async (data: any) => {
+  const displayBasicResults = async (data: BasicAnalysisData) => {
     const analysisResult = data.analysis;
     await saveReportAndRedirect(analysisResult, 'basic');
   };
 
-  const displayFullDiagnosticResults = async (data: any) => {
+  const displayFullDiagnosticResults = async (data: FullDiagnosticData) => {
     const analysis = data.analysis;
     await saveReportAndRedirect(analysis, 'full');
   };

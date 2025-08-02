@@ -74,8 +74,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function processUploadedFiles(files: File[]) {
-  const processedFiles = [];
+async function processUploadedFiles(files: File[]): Promise<string> {
+  const processedFiles: Array<{
+    name: string;
+    type: string;
+    size: number;
+    content: string;
+    isImage: boolean;
+    base64: string;
+  }> = [];
   
   for (const file of files) {
     try {
@@ -90,7 +97,7 @@ async function processUploadedFiles(files: File[]) {
       }
 
       let content = '';
-      let fileInfo = {
+      const fileInfo = {
         name: fileName,
         type: fileType,
         size: fileSize,
@@ -124,18 +131,18 @@ async function processUploadedFiles(files: File[]) {
     }
   }
   
-  return processedFiles;
+  return JSON.stringify(processedFiles);
 }
 
-async function analyzeWithGemini(request: any) {
+async function analyzeWithGemini(analysisRequest: any): Promise<any> {
   try {
     // Use the enhanced Gemini service for full diagnostic
     const analysis = await geminiHealthService.analyzeFullDiagnostic({
-      symptoms: request.symptoms,
-      duration: request.duration,
-      severity: request.severity,
-      additionalInfo: request.additionalInfo,
-      uploadedFiles: request.uploadedFiles
+      symptoms: analysisRequest.symptoms,
+      duration: analysisRequest.duration,
+      severity: analysisRequest.severity,
+      additionalInfo: analysisRequest.additionalInfo,
+      uploadedFiles: JSON.parse(analysisRequest.uploadedFiles || '[]')
     });
     
     return analysis;
@@ -145,9 +152,9 @@ async function analyzeWithGemini(request: any) {
   }
 }
 
-async function analyzeWithO3(request: any) {
+async function analyzeWithO3(analysisRequest: any): Promise<any> {
   try {
-    const prompt = buildO3FullDiagnosticPrompt(request);
+    const prompt = buildO3FullDiagnosticPrompt(analysisRequest);
 
     const completion = await openai.chat.completions.create({
       model: "o3-mini",
@@ -180,9 +187,10 @@ async function analyzeWithO3(request: any) {
 function buildO3FullDiagnosticPrompt(request: any): string {
   let fileContext = '';
   let hasUploadedReports = false;
-  if (request.uploadedFiles && request.uploadedFiles.length > 0) {
+  const uploadedFiles = JSON.parse(request.uploadedFiles || '[]');
+  if (uploadedFiles && uploadedFiles.length > 0) {
     fileContext = '\n\nUPLOADED DOCUMENTS/IMAGES:\n';
-    request.uploadedFiles.forEach((file: any, index: number) => {
+    uploadedFiles.forEach((file: { name: string; type: string; content?: string; isImage?: boolean }, index: number) => {
       fileContext += `${index + 1}. ${file.name} (${file.type})\n`;
       if (file.content && !file.isImage) {
         fileContext += `Content: ${file.content.substring(0, 1000)}${file.content.length > 1000 ? '...' : ''}\n`;
@@ -198,7 +206,7 @@ function buildO3FullDiagnosticPrompt(request: any): string {
   return `
 Please perform a comprehensive diagnostic analysis based on the following information:
 
-SYMPTOMS: ${request.symptoms.join(', ')}
+SYMPTOMS: ${Array.isArray(request.symptoms) ? request.symptoms.join(', ') : request.symptoms}
 ${request.duration ? `DURATION: ${request.duration}` : ''}
 ${request.severity ? `SEVERITY: ${request.severity}` : ''}
 ${request.additionalInfo ? `ADDITIONAL INFO: ${request.additionalInfo}` : ''}
@@ -267,7 +275,7 @@ RED_FLAGS:
 [Warning signs that require immediate medical attention]
 
 DOCUMENT_ANALYSIS:
-${request.uploadedFiles.length > 0 ? '[Analysis of uploaded documents and their relevance to the symptoms]' : '[No documents uploaded]'}
+${uploadedFiles.length > 0 ? '[Analysis of uploaded documents and their relevance to the symptoms]' : '[No documents uploaded]'}
 
 ${hasUploadedReports ? `
 NEGLIGENCE_ASSESSMENT:
@@ -296,7 +304,7 @@ ${hasUploadedReports ? 'IMPORTANT: If potential negligence is identified, strong
 `;
 }
 
-function parseO3FullDiagnosticResponse(response: string) {
+function parseO3FullDiagnosticResponse(response: string): Record<string, unknown> {
   const lines = response.split('\n');
   let urgencyLevel = 'medium';
   let comprehensiveAnalysis = '';

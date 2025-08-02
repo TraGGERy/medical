@@ -3,6 +3,20 @@ import { users, userMedicalHistory } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import type { User } from '@clerk/nextjs/server';
 
+interface MedicalHistoryUpdateData {
+  allergies?: unknown[];
+  medications?: unknown[];
+  chronicConditions?: unknown[];
+  familyHistory?: unknown[];
+  lifestyle?: unknown;
+  emergencyContact?: unknown;
+  bloodType?: string;
+  height?: string;
+  weight?: string;
+  dateOfBirth?: Date;
+  gender?: string;
+}
+
 export async function createOrUpdateUser(clerkUser: User) {
   try {
     const userData = {
@@ -83,7 +97,7 @@ export async function getUserMedicalHistory(userId: string) {
   }
 }
 
-export async function updateUserMedicalHistory(userId: string, data: any) {
+export async function updateUserMedicalHistory(userId: string, data: MedicalHistoryUpdateData) {
   try {
     const existingHistory = await getUserMedicalHistory(userId);
 

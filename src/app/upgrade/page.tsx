@@ -1,13 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import Button from '@/components/Button';
 import PricingCard from '@/components/PricingCard';
 
 export default function UpgradePage() {
   const { user } = useUser();
-  const [loading, setLoading] = useState(false);
 
   const handleUpgrade = async (planId: string) => {
     if (!user) {
@@ -15,7 +12,6 @@ export default function UpgradePage() {
       return;
     }
 
-    setLoading(true);
     try {
       // Map plan to Stripe price ID
       const priceId = planId === 'pro' 
@@ -47,8 +43,6 @@ export default function UpgradePage() {
     } catch (error) {
       console.error('Error upgrading subscription:', error);
       alert(`Error processing upgrade: ${error instanceof Error ? error.message : 'Please try again.'}`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -160,7 +154,7 @@ export default function UpgradePage() {
                 Can I cancel my subscription anytime?
               </h3>
               <p className="text-gray-600">
-                Yes, you can cancel your subscription at any time. You'll continue to have access to premium features until the end of your billing period.
+                Yes, you can cancel your subscription at any time. You&apos;ll continue to have access to premium features until the end of your billing period.
               </p>
             </div>
             
@@ -169,7 +163,7 @@ export default function UpgradePage() {
                 What happens to my free reports when I upgrade?
               </h3>
               <p className="text-gray-600">
-                When you upgrade, you'll get unlimited reports immediately. Your previous reports will remain accessible in your dashboard.
+                When you upgrade, you&apos;ll get unlimited reports immediately. Your previous reports will remain accessible in your dashboard.
               </p>
             </div>
             

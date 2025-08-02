@@ -16,6 +16,14 @@ interface PrivacySettingsData {
   twoFactorEnabled: boolean;
 }
 
+interface Report {
+  id: string;
+  date: string;
+  condition: string;
+  status: 'Normal' | 'Attention' | 'Urgent';
+  riskLevel: string;
+}
+
 export default function PrivacySettings() {
   const { user, isLoaded } = useUser();
   
@@ -31,13 +39,12 @@ export default function PrivacySettings() {
   });
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteType, setDeleteType] = useState<'single' | 'all'>('single');
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
 
   // Fetch privacy settings and reports on component mount
   useEffect(() => {
@@ -97,7 +104,6 @@ export default function PrivacySettings() {
 
   const saveSettings = async (settingsToSave: PrivacySettingsData) => {
     try {
-      setSaving(true);
       console.log('Attempting to save settings:', settingsToSave);
       
       const response = await fetch('/api/privacy-settings', {
@@ -138,8 +144,6 @@ export default function PrivacySettings() {
       alert(`Failed to update privacy settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
       // Revert the change on error
       fetchPrivacySettings();
-    } finally {
-      setSaving(false);
     }
   };
 

@@ -115,7 +115,13 @@ export async function updateSubscriptionStatus(
   cancelAtPeriodEnd?: boolean
 ): Promise<boolean> {
   try {
-    const updateData: any = {
+    const updateData: {
+      status: string;
+      updatedAt: Date;
+      currentPeriodStart?: Date;
+      currentPeriodEnd?: Date;
+      cancelAtPeriodEnd?: boolean;
+    } = {
       status,
       updatedAt: new Date()
     };

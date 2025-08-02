@@ -25,7 +25,7 @@ export default function Testimonial({ name, role, content, avatar, rating }: Tes
           <span key={i} className="text-yellow-400 text-lg">★</span>
         ))}
       </div>
-      <p className="text-gray-700 italic">"{content}"</p>
+      <p className="text-gray-700 italic">&ldquo;{content}&rdquo;</p>
     </div>
   );
 }

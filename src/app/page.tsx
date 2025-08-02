@@ -144,7 +144,7 @@ export default function LandingPage() {
             <Testimonial
               name="Sarah Johnson"
               role="Working Mom"
-              content="Saved me a 3-hour ER visit! The AI correctly identified my symptoms and told me it wasn't urgent. Got the right treatment the next day."
+              content="Saved me a 3-hour ER visit! The AI correctly identified my symptoms and told me it wasn&apos;t urgent. Got the right treatment the next day."
               avatar="SJ"
               rating={5}
             />
@@ -256,7 +256,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold mb-4 animate-fade-in-up">
-            Don't Wait Until It's Too Late
+            Don&apos;t Wait Until It&apos;s Too Late
           </h2>
           <p className="mb-6 text-base sm:text-lg opacity-90 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
             Early detection saves lives. Get your health report now - completely FREE.
@@ -301,11 +301,11 @@ export default function LandingPage() {
             </div>
             <div className="bg-white p-6 rounded-2xl shadow">
               <h3 className="font-semibold mb-2">How reliable is the AI analysis?</h3>
-              <p className="text-gray-600">Our AI provides educational health insights based on advanced algorithms. However, it's designed to supplement, not replace, professional medical advice. Always consult healthcare professionals for medical decisions.</p>
+              <p className="text-gray-600">Our AI provides educational health insights based on advanced algorithms. However, it&apos;s designed to supplement, not replace, professional medical advice. Always consult healthcare professionals for medical decisions.</p>
             </div>
             <div className="bg-white p-6 rounded-2xl shadow">
               <h3 className="font-semibold mb-2">Is my health data secure?</h3>
-              <p className="text-gray-600">Absolutely. We're HIPAA and GDPR compliant with bank-level encryption. Your data is never shared or sold.</p>
+              <p className="text-gray-600">Absolutely. We&apos;re HIPAA and GDPR compliant with bank-level encryption. Your data is never shared or sold.</p>
             </div>
             <div className="bg-white p-6 rounded-2xl shadow">
               <h3 className="font-semibold mb-2">How long does it take?</h3>

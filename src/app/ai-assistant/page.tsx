@@ -2,10 +2,19 @@
 
 import { useState } from 'react';
 
+interface AnalysisResult {
+  symptoms: string;
+  analysis: string;
+  recommendations: string[];
+  urgencyLevel: 'low' | 'medium' | 'high' | 'emergency';
+  possibleConditions: string[];
+  disclaimer: string;
+}
+
 export default function AIHealthAssistant() {
   const [activeTab, setActiveTab] = useState<'analyze' | 'report'>('analyze');
   const [symptoms, setSymptoms] = useState('');
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [healthReport, setHealthReport] = useState('');

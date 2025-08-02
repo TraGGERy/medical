@@ -27,7 +27,7 @@ export default function EarlyAccessPage() {
           <div className="text-6xl mb-4">🎉</div>
           <h1 className="text-3xl font-bold text-gray-800 mb-4">Welcome to Early Access!</h1>
           <p className="text-gray-600 mb-6">
-            Thank you for joining! We'll notify you as soon as MediScope AI is ready.
+            Thank you for joining! We&apos;ll notify you as soon as MediScope AI is ready.
           </p>
           <Button onClick={() => window.location.href = '/'}>
             Back to Home
@@ -98,7 +98,7 @@ export default function EarlyAccessPage() {
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
               By joining, you agree to receive updates about MediScope AI. 
-              We respect your privacy and won't spam you.
+              We respect your privacy and won&apos;t spam you.
             </p>
           </div>
         </div>

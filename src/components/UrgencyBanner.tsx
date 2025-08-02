@@ -36,7 +36,7 @@ export default function UrgencyBanner() {
           <span className="bg-white text-red-600 px-1 sm:px-2 py-1 rounded font-bold mx-1 text-xs sm:text-sm">
             {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
           </span>
-          <span className="hidden sm:inline">- Don't miss out!</span>
+          <span className="hidden sm:inline">- Don&apos;t miss out!</span>
         </p>
       </div>
     </div>

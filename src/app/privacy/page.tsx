@@ -43,9 +43,9 @@ export default function PrivacyPage() {
             
             <h2>1. Introduction and Legal Commitment</h2>
             <p>
-              DiagnoGenie ("Company," "we," "our," or "us") is legally committed to protecting your privacy and personal health information. 
+              DiagnoGenie (&quot;Company,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is legally committed to protecting your privacy and personal health information. 
               This Privacy Policy constitutes a binding legal agreement between you and DiagnoGenie regarding the collection, use, disclosure, 
-              and protection of your information when you use our AI-powered health diagnostic service ("Service").
+              and protection of your information when you use our AI-powered health diagnostic service (&quot;Service&quot;).
             </p>
             <p>
               <strong>BY USING OUR SERVICE, YOU EXPRESSLY CONSENT TO THE PRACTICES DESCRIBED IN THIS PRIVACY POLICY.</strong> 
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
               <strong>THIS IS A LEGALLY BINDING COMMITMENT:</strong> We hereby covenant and warrant that we will not, 
               under any circumstances, sell, rent, lease, or otherwise monetize your personal or health information. 
               Any violation of this commitment shall constitute a material breach of this agreement, entitling you to 
-              legal remedies including but not limited to damages, injunctive relief, and attorney's fees.
+              legal remedies including but not limited to damages, injunctive relief, and attorney&apos;s fees.
             </p>
 
             <h3>2.2 Zero Tolerance Policy</h3>
@@ -170,7 +170,7 @@ export default function PrivacyPage() {
             <ul>
               <li>Monetary damages (actual and punitive)</li>
               <li>Injunctive relief to stop further violations</li>
-              <li>Attorney's fees and court costs</li>
+              <li><strong>Attorney&apos;s fees and court costs</strong></li>
               <li>Statutory damages under applicable privacy laws</li>
             </ul>
 
@@ -234,7 +234,7 @@ export default function PrivacyPage() {
               <li>Certification schemes</li>
             </ul>
 
-            <h2>9. Children's Privacy</h2>
+            <h2>9. Children&apos;s Privacy</h2>
             <p>
               Our service is not intended for children under 13. We do not knowingly collect personal information from children under 13. 
               If you are a parent or guardian and believe your child has provided us with personal information, please contact us.
@@ -291,7 +291,7 @@ export default function PrivacyPage() {
               <h3 className="text-xl font-bold mb-4 text-black">🛡️ OUR UNBREAKABLE PROMISE TO YOU</h3>
               <div className="space-y-3 text-black">
                 <p className="font-semibold">Your health data is SACRED to us. We treat it with the same care we would want for our own family's health information.</p>
-                <p>We will NEVER sell, share, or monetize your personal health data. This is not just a business policy - it's a moral and legal commitment.</p>
+                <p>We will NEVER sell, share, or monetize your personal health data. This is not just a business policy - it&apos;s a moral and legal commitment.</p>
                 <p>If we ever violate this promise, we will face the full consequences under law, including personal accountability from our executives.</p>
                 <p className="text-lg font-bold">Your privacy is not negotiable. Period.</p>
               </div>
@@ -337,7 +337,7 @@ export default function PrivacyPage() {
                 <li><strong>Class Action Participation:</strong> Join or initiate class action lawsuits for widespread violations</li>
                 <li><strong>Injunctive Relief:</strong> Seek court orders to stop ongoing violations</li>
                 <li><strong>Statutory Damages:</strong> Claim damages as provided by applicable privacy statutes</li>
-                <li><strong>Attorney's Fees:</strong> Recover your legal costs if you prevail in court</li>
+                <li><strong>Attorney&apos;s Fees:</strong> Recover your legal costs if you prevail in court</li>
               </ul>
             </div>
 
@@ -345,7 +345,7 @@ export default function PrivacyPage() {
             <p>
               <strong>LIQUIDATED DAMAGES:</strong> In recognition that privacy violations cause harm that is difficult to quantify, 
               we agree that any unauthorized disclosure of your personal health information shall result in liquidated damages 
-              of no less than $10,000 per incident, plus actual damages, attorney's fees, and costs.
+              of no less than $10,000 per incident, plus actual damages, attorney&apos;s fees, and costs.
             </p>
 
             <h3>15.3 Waiver of Arbitration for Privacy Claims</h3>
@@ -398,7 +398,7 @@ export default function PrivacyPage() {
             <ul>
               <li>Right of access to your personal data</li>
               <li>Right to rectification of inaccurate data</li>
-              <li>Right to erasure ("right to be forgotten")</li>
+              <li>Right to erasure (&quot;right to be forgotten&quot;)</li>
               <li>Right to restrict processing</li>
               <li>Right to data portability</li>
               <li>Right to object to processing</li>

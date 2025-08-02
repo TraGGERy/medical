@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
 
     // Build query conditions
-    let whereConditions = eq(healthReports.userId, userId);
+    const whereConditions = eq(healthReports.userId, userId);
 
     // Fetch health reports from database
     const reports = await db
@@ -47,9 +47,10 @@ export async function GET(request: NextRequest) {
       }
 
       // Create a summary from the AI analysis
-      const summary = typeof aiAnalysis === 'object' && aiAnalysis !== null 
-        ? (aiAnalysis as any).analysis || (aiAnalysis as any).summary || 'Health analysis completed'
+      const summaryValue = typeof aiAnalysis === 'object' && aiAnalysis !== null 
+        ? (aiAnalysis as Record<string, unknown>).analysis || (aiAnalysis as Record<string, unknown>).summary || 'Health analysis completed'
         : 'Health analysis completed';
+      const summary = typeof summaryValue === 'string' ? summaryValue : 'Health analysis completed';
 
       return {
         id: report.id,
