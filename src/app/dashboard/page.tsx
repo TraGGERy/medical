@@ -21,14 +21,31 @@ interface HealthReport {
   riskLevel: string;
   summary: string;
   confidence: number;
-  symptoms: any[];
-  aiAnalysis: any;
-  recommendations: any[];
+  symptoms: string[];
+  aiAnalysis: {
+    analysis?: string;
+    possibleConditions?: string[];
+    recommendations?: string[];
+    urgencyLevel?: string;
+    [key: string]: unknown;
+  };
+  recommendations: string[];
   urgencyLevel: number;
   followUpRequired: boolean;
   doctorRecommended: boolean;
   createdAt?: string;
-  fullReport: any;
+  fullReport: {
+    analysis?: string;
+    possibleConditions?: string[];
+    recommendations?: string[];
+    lifestyleRecommendations?: string[];
+    followUpPlan?: string[];
+    redFlags?: string;
+    documentAnalysis?: string;
+    negligenceAssessment?: string;
+    disclaimer?: string;
+    [key: string]: unknown;
+  };
 }
 
 interface DashboardStats {

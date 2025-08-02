@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   // Create a new Svix instance with your secret.
   const wh = new Webhook(webhookSecret);
 
-  let evt: any;
+  let evt: { type: string; data: { id: string; [key: string]: unknown } };
 
   // Verify the payload with the headers
   try {
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       'svix-id': svix_id,
       'svix-timestamp': svix_timestamp,
       'svix-signature': svix_signature,
-    }) as any;
+    }) as { type: string; data: { id: string; [key: string]: unknown } };
   } catch (err) {
     console.error('Error verifying webhook:', err);
     return new Response('Error occured', {

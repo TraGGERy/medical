@@ -31,8 +31,14 @@ interface DetailedHealthReport {
   urgencyLevel: number;
   followUpRequired: boolean;
   doctorRecommended: boolean;
-  symptoms: any[];
-  aiAnalysis: any;
+  symptoms: Array<string | { name: string; [key: string]: unknown }>;
+  aiAnalysis: {
+    analysis?: string;
+    diagnosis?: string;
+    summary?: string;
+    negligenceAssessment?: string;
+    [key: string]: unknown;
+  } | string;
   recommendations: string[];
   createdAt: string;
   updatedAt: string;
@@ -119,7 +125,7 @@ const ReportViewPage: React.FC = () => {
         confidence: report.confidence,
         summary: `Risk Level: ${report.riskLevel} | Follow-up Required: ${report.followUpRequired ? 'Yes' : 'No'} | Doctor Recommended: ${report.doctorRecommended ? 'Yes' : 'No'}`,
         symptoms: Array.isArray(report.symptoms) 
-          ? report.symptoms.map((symptom: any) => typeof symptom === 'string' ? symptom : symptom.name || 'Unknown symptom').join(', ')
+          ? report.symptoms.map((symptom: string | { name: string; [key: string]: unknown }) => typeof symptom === 'string' ? symptom : symptom.name || 'Unknown symptom').join(', ')
           : report.symptoms,
         aiAnalysis: typeof report.aiAnalysis === 'object' ? JSON.stringify(report.aiAnalysis, null, 2) : report.aiAnalysis,
         recommendations: Array.isArray(report.recommendations) 
@@ -323,7 +329,7 @@ const ReportViewPage: React.FC = () => {
             </div>
             <div className="space-y-2">
               {report.symptoms.length > 0 ? (
-                report.symptoms.map((symptom: any, index: number) => (
+                report.symptoms.map((symptom: string | { name: string; [key: string]: unknown }, index: number) => (
                   <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                     <span className="text-gray-700">
@@ -393,7 +399,7 @@ const ReportViewPage: React.FC = () => {
         </div>
 
         {/* Negligence Assessment */}
-        {report.aiAnalysis?.negligenceAssessment && (
+        {typeof report.aiAnalysis === 'object' && report.aiAnalysis && 'negligenceAssessment' in report.aiAnalysis && report.aiAnalysis.negligenceAssessment && (
           <div className="mt-8 bg-red-50 rounded-lg p-6 shadow-sm border border-red-200">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -413,7 +419,7 @@ const ReportViewPage: React.FC = () => {
             <div className="bg-white rounded-lg p-4 border border-red-200">
               <h4 className="font-medium text-gray-800 mb-3">Assessment Details:</h4>
               <div className="prose prose-sm max-w-none text-gray-700">
-                {report.aiAnalysis.negligenceAssessment.split('\n').map((paragraph: string, index: number) => (
+                {(report.aiAnalysis as any).negligenceAssessment.split('\n').map((paragraph: string, index: number) => (
                   paragraph.trim() && (
                     <p key={index} className="mb-2 leading-relaxed">
                       {paragraph.trim()}

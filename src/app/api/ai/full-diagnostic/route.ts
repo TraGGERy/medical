@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FullDiagnosticResponse } from '@/lib/services/geminiService';
 import { auth } from '@clerk/nextjs/server';
 import { geminiHealthService } from '@/lib/services/geminiService';
 import OpenAI from 'openai';
@@ -134,7 +135,13 @@ async function processUploadedFiles(files: File[]): Promise<string> {
   return JSON.stringify(processedFiles);
 }
 
-async function analyzeWithGemini(analysisRequest: any): Promise<any> {
+async function analyzeWithGemini(analysisRequest: {
+  symptoms: string[];
+  duration?: string;
+  severity?: string;
+  additionalInfo?: string;
+  uploadedFiles: string;
+}): Promise<FullDiagnosticResponse> {
   try {
     // Use the enhanced Gemini service for full diagnostic
     const analysis = await geminiHealthService.analyzeFullDiagnostic({
@@ -152,7 +159,13 @@ async function analyzeWithGemini(analysisRequest: any): Promise<any> {
   }
 }
 
-async function analyzeWithO3(analysisRequest: any): Promise<any> {
+async function analyzeWithO3(analysisRequest: {
+  symptoms: string[];
+  duration?: string;
+  severity?: string;
+  additionalInfo?: string;
+  uploadedFiles: string;
+}): Promise<Record<string, unknown>> {
   try {
     const prompt = buildO3FullDiagnosticPrompt(analysisRequest);
 
@@ -184,7 +197,13 @@ async function analyzeWithO3(analysisRequest: any): Promise<any> {
   }
 }
 
-function buildO3FullDiagnosticPrompt(request: any): string {
+function buildO3FullDiagnosticPrompt(request: {
+  symptoms: string[];
+  duration?: string;
+  severity?: string;
+  additionalInfo?: string;
+  uploadedFiles: string;
+}): string {
   let fileContext = '';
   let hasUploadedReports = false;
   const uploadedFiles = JSON.parse(request.uploadedFiles || '[]');

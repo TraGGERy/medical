@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, Part } from '@google/generative-ai';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -106,15 +106,15 @@ export class GeminiHealthService {
       const prompt = this.buildFullDiagnosticPrompt(request);
       
       // Prepare content parts for multimodal input
-      const parts: any[] = [{ text: prompt }];
+      const parts: Part[] = [{ text: prompt }];
       
       // Add images to the request
       if (request.uploadedFiles) {
         for (const file of request.uploadedFiles) {
           if (file.isImage && file.base64) {
             parts.push({
-              inline_data: {
-                mime_type: file.type,
+              inlineData: {
+                mimeType: file.type,
                 data: file.base64
               }
             });
