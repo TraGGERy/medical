@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Download,
   Share2,
-  User,
   Activity,
   FileText,
   Heart,
@@ -419,7 +418,7 @@ const ReportViewPage: React.FC = () => {
             <div className="bg-white rounded-lg p-4 border border-red-200">
               <h4 className="font-medium text-gray-800 mb-3">Assessment Details:</h4>
               <div className="prose prose-sm max-w-none text-gray-700">
-                {(report.aiAnalysis as any).negligenceAssessment.split('\n').map((paragraph: string, index: number) => (
+                {(report.aiAnalysis as { negligenceAssessment: string }).negligenceAssessment.split('\n').map((paragraph: string, index: number) => (
                   paragraph.trim() && (
                     <p key={index} className="mb-2 leading-relaxed">
                       {paragraph.trim()}

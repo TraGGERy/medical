@@ -290,7 +290,7 @@ export default function PrivacyPage() {
             <div className="bg-gray-100 border-2 border-gray-300 p-8 rounded-lg mb-8">
               <h3 className="text-xl font-bold mb-4 text-black">🛡️ OUR UNBREAKABLE PROMISE TO YOU</h3>
               <div className="space-y-3 text-black">
-                <p className="font-semibold">Your health data is SACRED to us. We treat it with the same care we would want for our own family's health information.</p>
+                <p className="font-semibold">Your health data is SACRED to us. We treat it with the same care we would want for our own family&apos;s health information.</p>
                 <p>We will NEVER sell, share, or monetize your personal health data. This is not just a business policy - it&apos;s a moral and legal commitment.</p>
                 <p>If we ever violate this promise, we will face the full consequences under law, including personal accountability from our executives.</p>
                 <p className="text-lg font-bold">Your privacy is not negotiable. Period.</p>
