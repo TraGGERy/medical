@@ -81,11 +81,11 @@ if (!mockBiometricData.has('sample_user')) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId: authUserId } =await auth();
-    const { userId } = params;
+    const { userId: authUserId } = await auth();
+    const { userId } = await context.params;
     
     if (!authUserId) {
       return NextResponse.json(
