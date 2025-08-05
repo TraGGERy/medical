@@ -446,7 +446,7 @@ export default function HealthDataInput({ onDataSubmitted, className }: HealthDa
                       <EntryIcon className={cn('w-4 h-4', type?.color || 'text-gray-500')} />
                       <div>
                         <div className="font-medium text-sm">
-                          {entry.label}: {entry.value} {entry.unit}
+                          {type?.label || entry.dataType}: {entry.value} {entry.unit}
                         </div>
                         <div className="text-xs text-gray-500">
                           {new Date(entry.timestamp).toLocaleString()}
