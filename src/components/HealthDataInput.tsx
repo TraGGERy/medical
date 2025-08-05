@@ -27,8 +27,25 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+interface HealthDataEntry {
+  id?: string;
+  dataType: string;
+  value: number;
+  unit: string;
+  source: string;
+  notes?: string;
+  timestamp?: string;
+  success?: boolean;
+}
+
+interface BulkSubmitResult {
+  success: boolean;
+  results?: HealthDataEntry[];
+  error?: string;
+}
+
 interface HealthDataInputProps {
-  onDataSubmitted?: (data: any) => void;
+  onDataSubmitted?: (data: HealthDataEntry[]) => void;
   className?: string;
 }
 
@@ -118,7 +135,7 @@ export default function HealthDataInput({ onDataSubmitted, className }: HealthDa
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bulkData, setBulkData] = useState<string>('');
   const [showBulkInput, setShowBulkInput] = useState(false);
-  const [recentEntries, setRecentEntries] = useState<any[]>([]);
+  const [recentEntries, setRecentEntries] = useState<HealthDataEntry[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +193,7 @@ export default function HealthDataInput({ onDataSubmitted, className }: HealthDa
       } else {
         toast.error(result.error || 'Failed to record health data');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error submitting health data:', error);
       toast.error('Failed to record health data');
     } finally {
@@ -222,7 +239,7 @@ export default function HealthDataInput({ onDataSubmitted, className }: HealthDa
       const result = await response.json();
 
       if (result.success) {
-        const successCount = result.results?.filter((r: any) => r.success).length || 0;
+        const successCount = result.results?.filter((r: HealthDataEntry) => r.success).length || 0;
         toast.success(`Successfully recorded ${successCount} of ${data.length} data points`);
         setBulkData('');
         setShowBulkInput(false);
@@ -230,7 +247,7 @@ export default function HealthDataInput({ onDataSubmitted, className }: HealthDa
       } else {
         toast.error(result.error || 'Failed to record bulk data');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error submitting bulk data:', error);
       toast.error('Failed to record bulk data');
     } finally {

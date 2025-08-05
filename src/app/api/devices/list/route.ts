@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
+interface Device {
+  id: string;
+  userId: string;
+  deviceType: string;
+  deviceName: string;
+  deviceId: string;
+  lastSync: string;
+  isActive: boolean;
+  createdAt: string;
+  status: string;
+  dataTypes: string[];
+  batteryLevel?: number;
+}
+
 // Mock database for demonstration
 const mockDeviceConnections = new Map();
-const mockBiometricData = new Map();
 
 // Initialize with some sample data
 if (!mockDeviceConnections.has('sample_user')) {
@@ -36,7 +49,7 @@ if (!mockDeviceConnections.has('sample_user')) {
   ]);
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { userId } =await auth();
     
@@ -51,10 +64,10 @@ export async function GET(request: NextRequest) {
     const userDevices = mockDeviceConnections.get(userId) || mockDeviceConnections.get('sample_user') || [];
     
     // Filter only active devices
-    const activeDevices = userDevices.filter((device: any) => device.isActive);
+    const activeDevices = userDevices.filter((device: Device) => device.isActive);
 
     // Add some real-time status simulation
-    const devicesWithStatus = activeDevices.map((device: any) => {
+    const devicesWithStatus = activeDevices.map((device: Device) => {
       const timeSinceLastSync = Date.now() - new Date(device.lastSync).getTime();
       const hoursAgo = timeSinceLastSync / (1000 * 60 * 60);
       

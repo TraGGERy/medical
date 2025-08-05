@@ -96,11 +96,11 @@ export default function RealtimeDashboard({ userId, className }: RealtimeDashboa
       } else {
         console.warn('API request failed with status:', response.status);
       }
-    } catch (error: any) {
-      if (error?.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.warn('Health data fetch timed out');
       } else {
-        console.warn('Failed to fetch health data:', error?.message || error);
+        console.warn('Failed to fetch health data:', error instanceof Error ? error.message : String(error));
       }
     } finally {
       setLoading(false);
@@ -126,7 +126,7 @@ export default function RealtimeDashboard({ userId, className }: RealtimeDashboa
          try {
            await fetchHealthData();
            consecutiveErrors = 0; // Reset error count on success
-         } catch (error: any) {
+         } catch (error: unknown) {
            consecutiveErrors++;
            console.warn(`Polling failed (${consecutiveErrors}/${maxErrors}):`, error);
            
@@ -188,7 +188,7 @@ export default function RealtimeDashboard({ userId, className }: RealtimeDashboa
                 setAlerts(prev => prev.filter(alert => alert.id !== message.alertId));
                 break;
             }
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.warn('Failed to parse WebSocket message:', error);
           }
         };
@@ -275,7 +275,7 @@ export default function RealtimeDashboard({ userId, className }: RealtimeDashboa
           alert.id === alertId ? { ...alert, isRead: true } : alert
         ));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to mark alert as read:', error);
     }
   };

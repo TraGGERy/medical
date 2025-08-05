@@ -9,6 +9,18 @@ import {
 import { markAlertAsRead } from '@/lib/services/websocketService';
 import { z } from 'zod';
 
+interface Alert {
+  id: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  isRead: boolean;
+  alertType: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  resolvedAt?: string;
+  status: 'active' | 'resolved';
+}
+
 /**
  * Alerts API Route for Real-time Health Monitoring
  * Handles health alerts, thresholds, and notifications
@@ -83,11 +95,11 @@ export async function GET(request: NextRequest) {
         const allAlerts = await getActiveAlerts(userId);
         const stats = {
           total: allAlerts.length,
-          critical: allAlerts.filter((a: any) => a.severity === 'critical').length,
-          high: allAlerts.filter((a: any) => a.severity === 'high').length,
-          medium: allAlerts.filter((a: any) => a.severity === 'medium').length,
-          low: allAlerts.filter((a: any) => a.severity === 'low').length,
-          unread: allAlerts.filter((a: any) => !a.isRead).length,
+          critical: allAlerts.filter((a: Alert) => a.severity === 'critical').length,
+          high: allAlerts.filter((a: Alert) => a.severity === 'high').length,
+          medium: allAlerts.filter((a: Alert) => a.severity === 'medium').length,
+          low: allAlerts.filter((a: Alert) => a.severity === 'low').length,
+          unread: allAlerts.filter((a: Alert) => !a.isRead).length,
         };
 
         return Response.json({

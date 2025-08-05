@@ -6,6 +6,20 @@ interface SyncRequest {
   forceSync?: boolean;
 }
 
+interface Device {
+  id: string;
+  userId: string;
+  deviceType: string;
+  deviceName: string;
+  deviceId: string;
+  lastSync: string;
+  isActive: boolean;
+  createdAt: string;
+  status: string;
+  dataTypes: string[];
+  batteryLevel?: number;
+}
+
 // Mock database references
 const mockDeviceConnections = new Map();
 const mockBiometricData = new Map();
@@ -33,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Find the device
     const userDevices = mockDeviceConnections.get(userId) || mockDeviceConnections.get('sample_user') || [];
-    const device = userDevices.find((d: any) => d.id === deviceId);
+    const device = userDevices.find((d: Device) => d.id === deviceId);
 
     if (!device) {
       return NextResponse.json(
@@ -107,7 +121,7 @@ function getSyncInterval(deviceType: string): number {
   return intervals[deviceType as keyof typeof intervals] || 30 * 60 * 1000;
 }
 
-async function simulateDeviceSync(device: any, userId: string) {
+async function simulateDeviceSync(device: Device, userId: string) {
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 
@@ -140,7 +154,7 @@ async function simulateDeviceSync(device: any, userId: string) {
   };
 }
 
-function generateMockSyncData(device: any, userId: string) {
+function generateMockSyncData(device: Device, userId: string) {
   const now = new Date();
   const data = [];
   

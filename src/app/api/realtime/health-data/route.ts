@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       default:
         return Response.json({ error: 'Invalid action parameter' }, { status: 400 });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Health data API error:', error);
     
     if (error instanceof z.ZodError) {
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
       alerts,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Health data GET error:', error);
     
     if (error instanceof z.ZodError) {
@@ -198,7 +198,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Health data deletion not yet implemented',
       dataId 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Health data DELETE error:', error);
     return Response.json({ error: 'Internal Server Error' }, { status: 500 });
   }

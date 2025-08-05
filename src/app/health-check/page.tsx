@@ -155,7 +155,7 @@ export default function HealthCheckPage() {
                       <Stethoscope className="w-6 h-6 mr-2 text-blue-600" />
                       Describe Your Symptoms
                     </h2>
-                    <p className="text-gray-600">Please provide a detailed description of what you're experiencing</p>
+                    <p className="text-gray-600">Please provide a detailed description of what you&apos;re experiencing</p>
                   </div>
                   
                   <div className="space-y-4">
