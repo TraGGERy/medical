@@ -53,27 +53,6 @@ export default function ProfileSettings() {
   const [newCondition, setNewCondition] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Auto-sync user with database when component loads
-  useEffect(() => {
-    const syncUser = async () => {
-      if (user) {
-        try {
-          // Sync user with database
-          await fetch('/api/sync-user', {
-            method: 'POST',
-          });
-
-          // Load user profile data
-          await loadUserData();
-        } catch (error) {
-          console.error('Error syncing user:', error);
-        }
-      }
-    };
-
-    syncUser();
-  }, [user, loadUserData]);
-
   const loadUserData = useCallback(async () => {
     if (!user) return;
 
@@ -123,6 +102,27 @@ export default function ProfileSettings() {
       setIsLoading(false);
     }
   }, [user]);
+
+  // Auto-sync user with database when component loads
+  useEffect(() => {
+    const syncUser = async () => {
+      if (user) {
+        try {
+          // Sync user with database
+          await fetch('/api/sync-user', {
+            method: 'POST',
+          });
+
+          // Load user profile data
+          await loadUserData();
+        } catch (error) {
+          console.error('Error syncing user:', error);
+        }
+      }
+    };
+
+    syncUser();
+  }, [user, loadUserData]);
 
   const handleProfileChange = (field: string, value: string) => {
     setProfile(prev => ({ ...prev, [field]: value }));
