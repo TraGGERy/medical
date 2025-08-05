@@ -1,6 +1,5 @@
 import { db } from './index';
 import { 
-  users, 
   symptoms, 
   medicalConditions, 
   subscriptionPlans 

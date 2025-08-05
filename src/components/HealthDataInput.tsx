@@ -38,12 +38,6 @@ interface HealthDataEntry {
   success?: boolean;
 }
 
-interface BulkSubmitResult {
-  success: boolean;
-  results?: HealthDataEntry[];
-  error?: string;
-}
-
 interface HealthDataInputProps {
   onDataSubmitted?: (data: HealthDataEntry[]) => void;
   className?: string;

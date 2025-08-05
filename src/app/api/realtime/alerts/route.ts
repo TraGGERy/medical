@@ -9,17 +9,7 @@ import {
 import { markAlertAsRead } from '@/lib/services/websocketService';
 import { z } from 'zod';
 
-interface Alert {
-  id: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  isRead: boolean;
-  alertType: string;
-  title: string;
-  message: string;
-  createdAt: string;
-  resolvedAt?: string;
-  status: 'active' | 'resolved';
-}
+
 
 /**
  * Alerts API Route for Real-time Health Monitoring

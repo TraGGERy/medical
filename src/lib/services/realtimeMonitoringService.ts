@@ -19,15 +19,7 @@ import { eq, and, gte, lte, desc } from 'drizzle-orm';
  * Handles continuous health data processing, threshold monitoring, and alert generation
  */
 
-// Health data types and their normal ranges
-const HEALTH_DATA_RANGES = {
-  heart_rate: { min: 60, max: 100, unit: 'bpm' },
-  blood_pressure_systolic: { min: 90, max: 140, unit: 'mmHg' },
-  blood_pressure_diastolic: { min: 60, max: 90, unit: 'mmHg' },
-  temperature: { min: 36.1, max: 37.2, unit: 'celsius' },
-  oxygen_saturation: { min: 95, max: 100, unit: '%' },
-  blood_sugar: { min: 70, max: 140, unit: 'mg/dL' },
-};
+
 
 /**
  * Store real-time health data and trigger analysis

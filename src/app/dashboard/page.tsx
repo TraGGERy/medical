@@ -7,7 +7,6 @@ import {
   Activity, 
   FileText, 
   CheckCircle, 
-  AlertTriangle, 
   Calendar,
   TrendingUp,
   Heart,
@@ -76,7 +75,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedReport] = useState(null);
 
   const renderContent = () => {
     switch (activeTab) {

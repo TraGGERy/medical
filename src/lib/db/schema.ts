@@ -6,11 +6,9 @@ import {
   integer, 
   boolean, 
   jsonb,
-  varchar,
   decimal
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
 
 // Users table - extends Clerk user data
 export const users = pgTable('users', {

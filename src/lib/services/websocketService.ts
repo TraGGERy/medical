@@ -418,8 +418,6 @@ export async function getConnectionStats() {
  */
 export async function cleanupStaleConnections() {
   try {
-    const staleThreshold = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
-    
     // Mark stale connections as inactive in database
     await db
       .update(websocketConnections)

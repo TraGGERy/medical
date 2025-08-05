@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
@@ -28,8 +28,6 @@ export async function POST() {
         { status: 404 }
       );
     }
-
-    const stripeSubscriptionId = subscription[0].stripeSubscriptionId;
 
     // Create Stripe billing portal session
     const portalSession = await stripe.billingPortal.sessions.create({

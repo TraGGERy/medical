@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { healthReports, userMedicalHistory, userPrivacySettings, chatSessions, userAnalytics } from '@/lib/db/schema';
+import { healthReports, userMedicalHistory, chatSessions, userAnalytics } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
 // DELETE - Delete user data

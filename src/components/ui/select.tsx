@@ -53,10 +53,8 @@ const Select: React.FC<SelectProps> = ({
   value, 
   onValueChange, 
   placeholder, 
-  disabled, 
   children, 
-  className,
-  variant 
+  className
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
@@ -140,12 +138,6 @@ const SelectContent = React.forwardRef<
   
   // Extract motion-conflicting props
   const { 
-    onDrag, 
-    onDragStart, 
-    onDragEnd, 
-    onAnimationStart, 
-    onAnimationEnd, 
-    onTransitionEnd,
     ...motionProps 
   } = props;
 

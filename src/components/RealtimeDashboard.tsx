@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/Progress';
+
 import { 
   Heart, 
   Thermometer, 
@@ -61,7 +61,7 @@ const SEVERITY_COLORS = {
   critical: 'bg-red-100 text-red-800 border-red-200',
 };
 
-export default function RealtimeDashboard({ userId, className }: RealtimeDashboardProps) {
+export default function RealtimeDashboard({ className }: RealtimeDashboardProps) {
   const [healthData, setHealthData] = useState<HealthData[]>([]);
   const [alerts, setAlerts] = useState<HealthAlert[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -202,7 +202,7 @@ export default function RealtimeDashboard({ userId, className }: RealtimeDashboa
           }
         };
         
-        ws.onerror = (error) => {
+        ws.onerror = () => {
           console.warn('WebSocket connection failed, falling back to polling');
           setIsConnected(false);
           // Fall back to polling immediately
@@ -210,7 +210,7 @@ export default function RealtimeDashboard({ userId, className }: RealtimeDashboa
             startPolling();
           }
         };
-      } catch (error) {
+      } catch {
         console.warn('Failed to initialize WebSocket, using polling fallback');
         setIsConnected(false);
         if (!usePolling) {

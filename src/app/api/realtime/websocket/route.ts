@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { WebSocketServer } from 'ws';
-import { registerConnection, handleWebSocketMessage } from '@/lib/services/websocketService';
+import { registerConnection } from '@/lib/services/websocketService';
 import { v4 as uuidv4 } from 'uuid';
 
 /**

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { healthReports } from '@/lib/db/schema';
-import { createOrUpdateUser } from '@/lib/services/userService';
+
 import { updateUserReportAnalytics, getUserMonthlyReportCount } from '@/lib/services/analyticsService';
 import { checkReportLimit } from '@/lib/services/subscriptionService';
 
@@ -159,8 +159,7 @@ export async function POST(request: NextRequest) {
     // Update user analytics
     await updateUserReportAnalytics(userId);
 
-    // Get updated report count for the current month
-    const updatedReportCount = await getUserMonthlyReportCount(userId);
+
 
     return NextResponse.json({ 
       success: true, 

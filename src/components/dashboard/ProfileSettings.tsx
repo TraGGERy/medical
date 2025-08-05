@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 
 interface UserProfile {
@@ -72,9 +72,9 @@ export default function ProfileSettings() {
     };
 
     syncUser();
-  }, [user]);
+  }, [user, loadUserData]);
 
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -122,7 +122,7 @@ export default function ProfileSettings() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   const handleProfileChange = (field: string, value: string) => {
     setProfile(prev => ({ ...prev, [field]: value }));
