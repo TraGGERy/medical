@@ -95,11 +95,11 @@ export async function GET(request: NextRequest) {
         const allAlerts = await getActiveAlerts(userId);
         const stats = {
           total: allAlerts.length,
-          critical: allAlerts.filter((a: Alert) => a.severity === 'critical').length,
-          high: allAlerts.filter((a: Alert) => a.severity === 'high').length,
-          medium: allAlerts.filter((a: Alert) => a.severity === 'medium').length,
-          low: allAlerts.filter((a: Alert) => a.severity === 'low').length,
-          unread: allAlerts.filter((a: Alert) => !a.isRead).length,
+          critical: allAlerts.filter(a => a.severity === 'critical').length,
+          high: allAlerts.filter(a => a.severity === 'high').length,
+          medium: allAlerts.filter(a => a.severity === 'medium').length,
+          low: allAlerts.filter(a => a.severity === 'low').length,
+          unread: allAlerts.filter(a => !a.isRead).length,
         };
 
         return Response.json({
