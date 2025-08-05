@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, HTMLMotionProps } from 'framer-motion';
 import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
@@ -31,10 +31,11 @@ const iconMap = {
 };
 
 export interface AlertProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends Omit<HTMLMotionProps<'div'>, 'ref' | 'children'>,
     VariantProps<typeof alertVariants> {
   dismissible?: boolean;
   onDismiss?: () => void;
+  children?: React.ReactNode;
 }
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
