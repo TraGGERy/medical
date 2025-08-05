@@ -393,9 +393,16 @@ export async function setupDefaultThresholds(userId: string) {
 /**
  * Mark alert as resolved
  */
+interface AlertUpdateData {
+  isResolved: boolean;
+  resolvedAt: Date;
+  resolution?: string;
+  resolvedBy?: string;
+}
+
 export async function resolveAlert(alertId: string, resolution?: string, userId?: string) {
   try {
-    const updateData: any = {
+    const updateData: AlertUpdateData = {
       isResolved: true,
       resolvedAt: new Date(),
     };
@@ -482,7 +489,13 @@ export async function detectAnomalies(userId: string, dataType: string) {
 /**
  * Trigger analysis job
  */
-export async function triggerAnalysisJob(userId: string, analysisType: string, parameters?: any) {
+interface AnalysisParameters {
+  dataType?: string;
+  dataCount?: number;
+  [key: string]: unknown;
+}
+
+export async function triggerAnalysisJob(userId: string, analysisType: string, parameters?: AnalysisParameters) {
   try {
     const analysisJob: NewAnalysisJob = {
       userId,

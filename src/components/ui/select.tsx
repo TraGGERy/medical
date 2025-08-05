@@ -44,7 +44,10 @@ const SelectContext = React.createContext<{
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   placeholder?: string;
-}>({} as any);
+}>({
+  isOpen: false,
+  setIsOpen: () => {},
+});
 
 const Select: React.FC<SelectProps> = ({ 
   value, 

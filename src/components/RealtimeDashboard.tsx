@@ -110,7 +110,7 @@ export default function RealtimeDashboard({ userId, className }: RealtimeDashboa
   // Setup real-time connection (fallback to polling if WebSocket fails)
   useEffect(() => {
     let ws: WebSocket | null = null;
-    let reconnectTimeout: NodeJS.Timeout | null = null;
+    const reconnectTimeout: { current: NodeJS.Timeout | null } = { current: null };
     let pollingInterval: NodeJS.Timeout | null = null;
     let usePolling = false;
 
@@ -234,8 +234,8 @@ export default function RealtimeDashboard({ userId, className }: RealtimeDashboa
       if (ws) {
         ws.close();
       }
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current);
       }
       if (pollingInterval) {
         clearInterval(pollingInterval);

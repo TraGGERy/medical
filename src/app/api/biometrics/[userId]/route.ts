@@ -1,4 +1,4 @@
-  import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
 interface BiometricData {
@@ -160,8 +160,17 @@ export async function GET(
   }
 }
 
+interface MetricSummary {
+  count: number;
+  latest: number;
+  average: number;
+  min: number;
+  max: number;
+  unit: string;
+}
+
 function calculateSummary(data: BiometricData[]) {
-  const summary: Record<string, any> = {};
+  const summary: Record<string, MetricSummary> = {};
   
   // Group data by metric type
   const groupedData = data.reduce((acc, item) => {

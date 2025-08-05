@@ -22,11 +22,18 @@ const userConnections = new Map<string, Set<string>>(); // userId -> Set of conn
 /**
  * Register a new WebSocket connection
  */
+interface DeviceInfo {
+  userAgent?: string;
+  platform?: string;
+  deviceType?: string;
+  [key: string]: unknown;
+}
+
 export async function registerConnection(
   userId: string,
   connectionId: string,
   websocket: WebSocket,
-  deviceInfo?: any
+  deviceInfo?: DeviceInfo
 ) {
   try {
     // Store connection in database
@@ -64,7 +71,7 @@ export async function registerConnection(
  * Set up WebSocket event handlers
  */
 function setupWebSocketHandlers(websocket: WebSocket, userId: string, connectionId: string) {
-  websocket.on('message', async (data: any) => {
+  websocket.on('message', async (data: Buffer | string) => {
     try {
       const message = JSON.parse(data.toString());
       await handleWebSocketMessage(userId, connectionId, message);
@@ -82,7 +89,7 @@ function setupWebSocketHandlers(websocket: WebSocket, userId: string, connection
     await unregisterConnection(connectionId);
   });
 
-  websocket.on('error', async (error: any) => {
+  websocket.on('error', async (error: Error) => {
     console.error('WebSocket error:', error);
     await unregisterConnection(connectionId);
   });
@@ -91,10 +98,20 @@ function setupWebSocketHandlers(websocket: WebSocket, userId: string, connection
 /**
  * Handle incoming WebSocket messages
  */
+interface WebSocketMessage {
+  type: string;
+  dataType?: string;
+  value?: number;
+  unit?: string;
+  timestamp?: string;
+  alertId?: string;
+  [key: string]: unknown;
+}
+
 export async function handleWebSocketMessage(
   userId: string,
   connectionId: string,
-  message: any
+  message: WebSocketMessage
 ) {
   try {
     switch (message.type) {
@@ -179,7 +196,7 @@ export async function unregisterConnection(connectionId: string) {
 /**
  * Send message to a specific connection
  */
-export async function sendToConnection(connectionId: string, message: any) {
+export async function sendToConnection(connectionId: string, message: Record<string, unknown>) {
   try {
     const websocket = activeConnections.get(connectionId);
     if (websocket && websocket.readyState === 1) { // 1 = OPEN
@@ -196,7 +213,7 @@ export async function sendToConnection(connectionId: string, message: any) {
 /**
  * Send message to all connections of a user
  */
-export async function sendToUser(userId: string, message: any) {
+export async function sendToUser(userId: string, message: Record<string, unknown>) {
   try {
     const connections = userConnections.get(userId);
     if (!connections || connections.size === 0) {
@@ -221,7 +238,7 @@ export async function sendToUser(userId: string, message: any) {
 /**
  * Broadcast message to all active connections
  */
-export async function broadcastMessage(message: any, excludeUser?: string) {
+export async function broadcastMessage(message: Record<string, unknown>, excludeUser?: string) {
   try {
     let sentCount = 0;
     

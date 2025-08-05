@@ -1,19 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Smartphone,
   Watch,
-  Heart,
   Activity,
-  Wifi,
   WifiOff,
   Plus,
   Settings,
   RefreshCw,
   Battery,
-  Bluetooth,
   CheckCircle,
   AlertCircle,
   Clock

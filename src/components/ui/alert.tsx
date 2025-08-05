@@ -49,7 +49,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.2 }}
-        {...(props as any)}
+        {...props}
       >
         <IconComponent className="h-4 w-4" />
         <div className="flex-1">{children}</div>
