@@ -38,7 +38,7 @@ export interface AlertProps
 }
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, variant = 'default', dismissible, onDismiss, children, ...props }, ref) => {
+  ({ className, variant = 'default', dismissible, onDismiss, children, onDrag, ...props }, ref) => {
     const IconComponent = iconMap[variant || 'default'];
 
     return (
