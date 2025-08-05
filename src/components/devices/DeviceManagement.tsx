@@ -120,7 +120,7 @@ const DeviceManagement: React.FC = () => {
         {/* Description */}
         <div className="space-y-4 text-gray-600">
           <p className="text-lg leading-relaxed">
-            We're building an advanced device management system that will allow you to:
+            We&apos;re building an advanced device management system that will allow you to:
           </p>
           
           <ul className="text-left space-y-2 text-sm">
