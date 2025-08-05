@@ -174,6 +174,117 @@ export const selectChatSessionSchema = createSelectSchema(chatSessions);
 export const insertUserPrivacySettingsSchema = createInsertSchema(userPrivacySettings);
 export const selectUserPrivacySettingsSchema = createSelectSchema(userPrivacySettings);
 
+// Real-time Health Monitoring Tables
+export const realtimeHealthData = pgTable('realtime_health_data', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  dataType: text('data_type').notNull(), // 'heart_rate', 'blood_pressure', 'temperature', 'symptoms'
+  value: jsonb('value').notNull(), // Flexible data structure for different metrics
+  unit: text('unit'), // 'bpm', 'mmHg', 'celsius', etc.
+  source: text('source').notNull(), // 'manual', 'device', 'ai_analysis'
+  deviceId: text('device_id'), // Reference to connected device
+  timestamp: timestamp('timestamp').notNull(),
+  isProcessed: boolean('is_processed').default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Alert Thresholds Configuration
+export const alertThresholds = pgTable('alert_thresholds', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  dataType: text('data_type').notNull(), // 'heart_rate', 'blood_pressure', etc.
+  minValue: decimal('min_value', { precision: 10, scale: 2 }),
+  maxValue: decimal('max_value', { precision: 10, scale: 2 }),
+  severity: text('severity').notNull(), // 'low', 'medium', 'high', 'critical'
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Real-time Health Alerts
+export const healthAlerts = pgTable('health_alerts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  alertType: text('alert_type').notNull(), // 'threshold_breach', 'anomaly_detected', 'emergency'
+  severity: text('severity').notNull(), // 'low', 'medium', 'high', 'critical'
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  dataSnapshot: jsonb('data_snapshot'), // Related health data at time of alert
+  thresholdId: uuid('threshold_id').references(() => alertThresholds.id),
+  isRead: boolean('is_read').default(false),
+  isResolved: boolean('is_resolved').default(false),
+  resolvedAt: timestamp('resolved_at'),
+  notificationsSent: jsonb('notifications_sent'), // Track which notifications were sent
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Real-time Analysis Jobs
+export const analysisJobs = pgTable('analysis_jobs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  jobType: text('job_type').notNull(), // 'continuous_monitoring', 'trend_analysis', 'anomaly_detection'
+  status: text('status').notNull(), // 'pending', 'running', 'completed', 'failed'
+  inputData: jsonb('input_data').notNull(),
+  outputData: jsonb('output_data'),
+  errorMessage: text('error_message'),
+  priority: integer('priority').default(1), // 1-5, higher number = higher priority
+  scheduledAt: timestamp('scheduled_at'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// WebSocket Connection Tracking
+export const websocketConnections = pgTable('websocket_connections', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  connectionId: text('connection_id').notNull().unique(),
+  deviceInfo: jsonb('device_info'), // Browser, OS, etc.
+  isActive: boolean('is_active').default(true),
+  lastPing: timestamp('last_ping').defaultNow(),
+  connectedAt: timestamp('connected_at').defaultNow().notNull(),
+  disconnectedAt: timestamp('disconnected_at'),
+});
+
+// Notification Queue
+export const notificationQueue = pgTable('notification_queue', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  alertId: uuid('alert_id').references(() => healthAlerts.id),
+  notificationType: text('notification_type').notNull(), // 'push', 'email', 'sms', 'websocket'
+  recipient: text('recipient').notNull(), // email, phone, or connection_id
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  payload: jsonb('payload'), // Additional data for the notification
+  status: text('status').default('pending'), // 'pending', 'sent', 'failed', 'delivered'
+  attempts: integer('attempts').default(0),
+  maxAttempts: integer('max_attempts').default(3),
+  scheduledAt: timestamp('scheduled_at').defaultNow(),
+  sentAt: timestamp('sent_at'),
+  deliveredAt: timestamp('delivered_at'),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Zod schemas for new tables
+export const insertRealtimeHealthDataSchema = createInsertSchema(realtimeHealthData);
+export const selectRealtimeHealthDataSchema = createSelectSchema(realtimeHealthData);
+
+export const insertAlertThresholdSchema = createInsertSchema(alertThresholds);
+export const selectAlertThresholdSchema = createSelectSchema(alertThresholds);
+
+export const insertHealthAlertSchema = createInsertSchema(healthAlerts);
+export const selectHealthAlertSchema = createSelectSchema(healthAlerts);
+
+export const insertAnalysisJobSchema = createInsertSchema(analysisJobs);
+export const selectAnalysisJobSchema = createSelectSchema(analysisJobs);
+
+export const insertWebsocketConnectionSchema = createInsertSchema(websocketConnections);
+export const selectWebsocketConnectionSchema = createSelectSchema(websocketConnections);
+
+export const insertNotificationQueueSchema = createInsertSchema(notificationQueue);
+export const selectNotificationQueueSchema = createSelectSchema(notificationQueue);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -195,3 +306,22 @@ export type NewMedicalCondition = typeof medicalConditions.$inferInsert;
 
 export type UserPrivacySettings = typeof userPrivacySettings.$inferSelect;
 export type NewUserPrivacySettings = typeof userPrivacySettings.$inferInsert;
+
+// Real-time monitoring types
+export type RealtimeHealthData = typeof realtimeHealthData.$inferSelect;
+export type NewRealtimeHealthData = typeof realtimeHealthData.$inferInsert;
+
+export type AlertThreshold = typeof alertThresholds.$inferSelect;
+export type NewAlertThreshold = typeof alertThresholds.$inferInsert;
+
+export type HealthAlert = typeof healthAlerts.$inferSelect;
+export type NewHealthAlert = typeof healthAlerts.$inferInsert;
+
+export type AnalysisJob = typeof analysisJobs.$inferSelect;
+export type NewAnalysisJob = typeof analysisJobs.$inferInsert;
+
+export type WebsocketConnection = typeof websocketConnections.$inferSelect;
+export type NewWebsocketConnection = typeof websocketConnections.$inferInsert;
+
+export type NotificationQueue = typeof notificationQueue.$inferSelect;
+export type NewNotificationQueue = typeof notificationQueue.$inferInsert;

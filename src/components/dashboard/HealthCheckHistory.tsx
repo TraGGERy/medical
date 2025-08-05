@@ -45,6 +45,7 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
   const [reports, setReports] = useState<HealthReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewingReportId, setViewingReportId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 5,
@@ -54,11 +55,18 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
   const reportsPerPage = 5;
 
   // Handle view report - use router navigation or fallback to prop
-  const handleViewReport = (reportId: string) => {
-    if (onViewReport) {
-      onViewReport(reportId);
-    } else {
-      router.push(`/reports/${reportId}`);
+  const handleViewReport = async (reportId: string) => {
+    setViewingReportId(reportId);
+    
+    try {
+      if (onViewReport) {
+        onViewReport(reportId);
+      } else {
+        router.push(`/reports/${reportId}`);
+      }
+    } catch (error) {
+      console.error('Error navigating to report:', error);
+      setViewingReportId(null);
     }
   };
 
@@ -101,6 +109,13 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
   useEffect(() => {
     fetchReports();
   }, [fetchReports]);
+
+  // Reset viewing state when component unmounts
+  useEffect(() => {
+    return () => {
+      setViewingReportId(null);
+    };
+  }, []);
 
   // Handle search with debouncing
   useEffect(() => {
@@ -251,9 +266,21 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
                 <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={() => handleViewReport(report.id)}
-                    className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base"
+                    disabled={viewingReportId === report.id}
+                    className={`px-3 sm:px-4 py-2 rounded-xl font-medium text-sm sm:text-base transition-colors flex items-center gap-2 ${
+                      viewingReportId === report.id
+                        ? 'bg-blue-400 text-white cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
                   >
-                    View Report Please
+                    {viewingReportId === report.id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Loading...
+                      </>
+                    ) : (
+                      'View Report'
+                    )}
                   </button>
                   <button
                     onClick={() => downloadReport(report)}

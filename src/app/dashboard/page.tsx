@@ -1,7 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
+import { motion } from 'framer-motion';
+import { 
+  Activity, 
+  FileText, 
+  CheckCircle, 
+  AlertTriangle, 
+  Calendar,
+  TrendingUp,
+  Heart,
+  Shield
+} from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import HealthCheckHistory from '@/components/dashboard/HealthCheckHistory';
 import NewDiagnostic from '@/components/dashboard/NewDiagnostic';
@@ -10,6 +21,12 @@ import ProfileSettings from '@/components/dashboard/ProfileSettings';
 import AIHealthAssistant from '@/components/dashboard/AIHealthAssistant';
 import PrivacySettings from '@/components/dashboard/PrivacySettings';
 import SubscriptionStatus from '@/components/dashboard/SubscriptionStatus';
+import RealtimeDashboard from '@/components/RealtimeDashboard';
+import DeviceManagement from '@/components/devices/DeviceManagement';
+import StatCard from '@/components/ui/StatCard';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 
 // Type definition for health report from API
 interface HealthReport {
@@ -49,13 +66,15 @@ interface HealthReport {
 }
 
 interface DashboardStats {
-  total: number;
-  normal: number;
-  attention: number;
-  thisMonth: number;
+  totalReports: number;
+  normalResults: number;
+  attentionResults: number;
+  urgentResults: number;
+  reportsThisMonth: number;
 }
 
 export default function Dashboard() {
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedReport, setSelectedReport] = useState(null);
 
@@ -67,6 +86,10 @@ export default function Dashboard() {
         return <HealthCheckHistory />;
       case 'new-diagnostic':
         return <NewDiagnostic onComplete={() => setActiveTab('history')} />;
+      case 'realtime-monitoring':
+        return <RealtimeDashboard userId={user?.id || ''} className="p-6" />;
+      case 'device-management':
+        return <DeviceManagement />;
       case 'report-viewer':
         return <ReportViewer report={selectedReport} onBack={() => setActiveTab('history')} />;
       case 'profile':
@@ -93,11 +116,23 @@ function DashboardOverview({ onStartDiagnostic }: { onStartDiagnostic: () => voi
   const [reports, setReports] = useState<HealthReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
-    total: 0,
-    normal: 0,
-    attention: 0,
-    thisMonth: 0
+    totalReports: 0,
+    normalResults: 0,
+    attentionResults: 0,
+    urgentResults: 0,
+    reportsThisMonth: 0
   });
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const healthScore = stats.totalReports > 0 
+    ? Math.round((stats.normalResults / stats.totalReports) * 100)
+    : 0;
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -119,10 +154,11 @@ function DashboardOverview({ onStartDiagnostic }: { onStartDiagnostic: () => voi
           });
 
           setStats({
-            total: allReports.length,
-            normal: allReports.filter((r: HealthReport) => r.status?.toLowerCase() === 'normal').length,
-            attention: allReports.filter((r: HealthReport) => r.status?.toLowerCase() === 'attention' || r.status?.toLowerCase() === 'urgent').length,
-            thisMonth: thisMonthReports.length
+            totalReports: allReports.length,
+            normalResults: allReports.filter((r: HealthReport) => r.status?.toLowerCase() === 'normal').length,
+            attentionResults: allReports.filter((r: HealthReport) => r.status?.toLowerCase() === 'attention').length,
+            urgentResults: allReports.filter((r: HealthReport) => r.status?.toLowerCase() === 'urgent').length,
+            reportsThisMonth: thisMonthReports.length
           });
         }
       } catch (error) {
@@ -150,131 +186,194 @@ function DashboardOverview({ onStartDiagnostic }: { onStartDiagnostic: () => voi
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-2xl p-4 sm:p-6">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2">Welcome back, {userName}!</h1>
-        <p className="opacity-90 mb-4 text-sm sm:text-base">Your health dashboard is ready. Start a new diagnostic or review your history.</p>
-        <button 
-          onClick={onStartDiagnostic}
-          className="bg-white text-blue-700 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:bg-gray-50 transition text-sm sm:text-base w-full sm:w-auto"
-        >
-          🚀 Start New Health Check
-        </button>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative overflow-hidden"
+      >
+        <Card className="border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+          <div className="relative z-10 p-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <motion.h1 
+                  className="text-3xl font-bold text-black mb-2"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  {getGreeting()}, {userName}!
+                </motion.h1>
+                <motion.p 
+                  className="text-gray-800 text-lg"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  Ready to take charge of your health today?
+                </motion.p>
+              </div>
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, type: 'spring' }}
+                className="hidden md:block"
+              >
+                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Heart className="w-12 h-12 text-white" />
+                </div>
+              </motion.div>
+            </div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mt-6"
+            >
+              <Button 
+                size="lg" 
+                className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
+                onClick={onStartDiagnostic}
+              >
+                <Activity className="w-5 h-5 mr-2" />
+                Start New Health Check
+              </Button>
+            </motion.div>
+          </div>
+          
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
+        </Card>
+      </motion.div>
+
+      {/* Stats Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Total Reports"
+            value={stats.totalReports}
+            icon={FileText}
+            variant="default"
+            loading={loading}
+            trend={stats.totalReports > 0 ? 'up' : 'neutral'}
+            trendValue={12}
+          />
+          
+          <StatCard
+            title="Health Score"
+            value={healthScore}
+            icon={Shield}
+            variant={healthScore >= 80 ? 'success' : healthScore >= 60 ? 'warning' : 'danger'}
+            suffix="%"
+            showProgress
+            maxValue={100}
+            loading={loading}
+            trend={healthScore >= 70 ? 'up' : 'down'}
+            trendValue={5}
+          />
+          
+          <StatCard
+            title="Normal Results"
+            value={stats.normalResults}
+            icon={CheckCircle}
+            variant="success"
+            loading={loading}
+            trend="up"
+            trendValue={8}
+          />
+          
+          <StatCard
+            title="This Month"
+            value={stats.reportsThisMonth}
+            icon={Calendar}
+            variant="default"
+            loading={loading}
+            trend={stats.reportsThisMonth > 0 ? 'up' : 'neutral'}
+            trendValue={15}
+          />
+        </div>
+      </motion.div>
 
       {/* Subscription Status */}
-      <SubscriptionStatus />
-      
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border">
-          <div className="flex items-center">
-            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center mr-2 sm:mr-4">
-              <span className="text-blue-600 text-sm sm:text-xl">📊</span>
-            </div>
-            <div>
-              <p className="text-lg sm:text-2xl font-bold text-gray-800">
-                {loading ? '...' : stats.total}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-600">Total Reports</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border">
-          <div className="flex items-center">
-            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center mr-2 sm:mr-4">
-              <span className="text-green-600 text-sm sm:text-xl">✅</span>
-            </div>
-            <div>
-              <p className="text-lg sm:text-2xl font-bold text-gray-800">
-                {loading ? '...' : stats.normal}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-600">Normal Results</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border">
-          <div className="flex items-center">
-            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-yellow-100 rounded-xl flex items-center justify-center mr-2 sm:mr-4">
-              <span className="text-yellow-600 text-sm sm:text-xl">⚠️</span>
-            </div>
-            <div>
-              <p className="text-lg sm:text-2xl font-bold text-gray-800">
-                {loading ? '...' : stats.attention}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-600">Need Attention</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border">
-          <div className="flex items-center">
-            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center mr-2 sm:mr-4">
-              <span className="text-purple-600 text-sm sm:text-xl">📅</span>
-            </div>
-            <div>
-              <p className="text-lg sm:text-2xl font-bold text-gray-800">
-                {loading ? '...' : stats.thisMonth}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-600">This Month</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <SubscriptionStatus />
+      </motion.div>
 
       {/* Recent Reports */}
-      <div className="bg-white rounded-2xl shadow-sm border p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">Recent Reports</h2>
-          <button className="text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base">View All</button>
-        </div>
-        
-        {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-gray-600 text-sm">Loading recent reports...</p>
-          </div>
-        ) : getRecentReports().length > 0 ? (
-          <div className="space-y-3 sm:space-y-4">
-            {getRecentReports().map((report, index) => (
-              <div key={report.id || index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-gray-50 rounded-xl space-y-2 sm:space-y-0">
-                <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-3 flex-shrink-0 ${
-                    report.status?.toLowerCase() === 'normal' ? 'bg-green-500' : 
-                    report.status?.toLowerCase() === 'urgent' ? 'bg-red-500' : 'bg-yellow-500'
-                  }`}></div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-800 text-sm sm:text-base truncate">
-                       {report.condition || 'Health Check'}
-                     </p>
-                     <p className="text-xs sm:text-sm text-gray-600">
-                       {formatDate(report.createdAt || report.date)}
-                     </p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between sm:flex-col sm:items-end sm:text-right ml-6 sm:ml-0">
-                  <p className={`text-xs sm:text-sm font-medium ${
-                    report.riskLevel?.toLowerCase() === 'low' ? 'text-green-600' : 
-                    report.riskLevel?.toLowerCase() === 'high' ? 'text-red-600' : 'text-yellow-600'
-                  }`}>
-                    {report.riskLevel || 'Unknown'} Risk
-                  </p>
-                  <button className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm">Please View Report</button>
-                </div>
+      {getRecentReports().length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
+          <Card className="shadow-lg">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                  Recent Health Reports
+                </h2>
+                <Button variant="outline" size="sm">
+                  View All
+                </Button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-2">📋</div>
-            <p className="text-gray-600 text-sm">No reports yet</p>
-            <p className="text-gray-500 text-xs">Start your first health check to see reports here</p>
-          </div>
-        )}
-      </div>
+              
+              <div className="space-y-4">
+                {getRecentReports().map((report, index) => (
+                  <motion.div
+                    key={report.id || index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 + index * 0.1 }}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className={cn(
+                        'w-3 h-3 rounded-full',
+                        report.status?.toLowerCase() === 'normal' && 'bg-green-500',
+                        report.status?.toLowerCase() === 'attention' && 'bg-yellow-500',
+                        report.status?.toLowerCase() === 'urgent' && 'bg-red-500'
+                      )}></div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {report.condition || 'Health Check'}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(report.createdAt || report.date)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <span className={cn(
+                        'px-2 py-1 text-xs font-medium rounded-full',
+                        report.riskLevel?.toLowerCase() === 'low' && 'bg-green-100 text-green-800',
+                        report.riskLevel?.toLowerCase() === 'medium' && 'bg-yellow-100 text-yellow-800',
+                        report.riskLevel?.toLowerCase() === 'high' && 'bg-red-100 text-red-800'
+                      )}>
+                        {report.riskLevel || 'Unknown'} risk
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 }
