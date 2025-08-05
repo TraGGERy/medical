@@ -449,7 +449,7 @@ export default function HealthDataInput({ onDataSubmitted, className }: HealthDa
                           {type?.label || entry.dataType}: {entry.value} {entry.unit}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {new Date(entry.timestamp).toLocaleString()}
+                          {new Date(entry.timestamp || Date.now()).toLocaleString()}
                         </div>
                       </div>
                     </div>
