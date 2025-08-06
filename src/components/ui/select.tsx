@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, HTMLMotionProps } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
@@ -130,16 +130,15 @@ const SelectValue = React.forwardRef<
 
 SelectValue.displayName = 'SelectValue';
 
+interface SelectContentProps extends Omit<HTMLMotionProps<'div'>, 'ref' | 'children'> {
+  children: React.ReactNode;
+}
+
 const SelectContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  SelectContentProps
 >(({ className, children, ...props }, ref) => {
   const { isOpen } = React.useContext(SelectContext);
-  
-  // Extract motion-conflicting props
-  const { 
-    ...motionProps 
-  } = props;
 
   return (
     <AnimatePresence>
@@ -154,7 +153,7 @@ const SelectContent = React.forwardRef<
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          {...motionProps}
+          {...props}
         >
           <div className="max-h-60 overflow-auto py-1">
             {children}

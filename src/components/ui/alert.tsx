@@ -35,7 +35,7 @@ export interface AlertProps
     VariantProps<typeof alertVariants> {
   dismissible?: boolean;
   onDismiss?: () => void;
-  children?: React.ReactNode;
+  children: React.ReactNode;
 }
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
