@@ -146,6 +146,10 @@ export async function handleWebSocketMessage(
         
       case 'mark_alert_read':
         // Client is marking an alert as read
+        if (!message.alertId) {
+          console.error('Missing alertId in mark_alert_read message');
+          break;
+        }
         await markAlertAsRead(message.alertId, userId);
         break;
         
