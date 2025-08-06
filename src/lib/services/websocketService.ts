@@ -129,6 +129,10 @@ export async function handleWebSocketMessage(
         
       case 'health_data':
         // Client is sending real-time health data
+        if (!message.dataType) {
+          console.error('Missing dataType in health_data message');
+          break;
+        }
         const { storeHealthData } = await import('./realtimeMonitoringService');
         await storeHealthData({
           userId,
