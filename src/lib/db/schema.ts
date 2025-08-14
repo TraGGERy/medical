@@ -283,6 +283,276 @@ export const selectWebsocketConnectionSchema = createSelectSchema(websocketConne
 export const insertNotificationQueueSchema = createInsertSchema(notificationQueue);
 export const selectNotificationQueueSchema = createSelectSchema(notificationQueue);
 
+// Telemedicine Tables
+
+// Healthcare Providers
+export const healthcareProviders = pgTable('healthcare_providers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  licenseNumber: text('license_number').notNull().unique(),
+  specialty: text('specialty').notNull(),
+  subSpecialty: text('sub_specialty'),
+  verificationStatus: text('verification_status').default('pending'), // pending, verified, rejected
+  practiceName: text('practice_name'),
+  practiceAddress: jsonb('practice_address'), // Address object
+  yearsOfExperience: integer('years_of_experience'),
+  education: jsonb('education'), // Array of education details
+  certifications: jsonb('certifications'), // Array of certifications
+  languages: jsonb('languages'), // Array of languages spoken
+  bio: text('bio'),
+  consultationFee: decimal('consultation_fee', { precision: 10, scale: 2 }),
+  currency: text('currency').default('USD'),
+  rating: decimal('rating', { precision: 3, scale: 2 }).default('0.00'),
+  totalReviews: integer('total_reviews').default(0),
+  isActive: boolean('is_active').default(true),
+  isAvailable: boolean('is_available').default(true),
+  verifiedAt: timestamp('verified_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Provider Specialties (Reference table)
+export const providerSpecialties = pgTable('provider_specialties', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull().unique(),
+  category: text('category').notNull(), // primary_care, specialist, mental_health, etc.
+  description: text('description'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Provider Availability
+export const providerAvailability = pgTable('provider_availability', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  providerId: uuid('provider_id').references(() => healthcareProviders.id, { onDelete: 'cascade' }).notNull(),
+  dayOfWeek: integer('day_of_week').notNull(), // 0-6 (Sunday-Saturday)
+  startTime: text('start_time').notNull(), // HH:MM format
+  endTime: text('end_time').notNull(), // HH:MM format
+  timezone: text('timezone').notNull(),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Telemedicine Appointments
+export const telemedicineAppointments = pgTable('telemedicine_appointments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  patientId: text('patient_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  providerId: uuid('provider_id').references(() => healthcareProviders.id, { onDelete: 'cascade' }).notNull(),
+  scheduledAt: timestamp('scheduled_at').notNull(),
+  durationMinutes: integer('duration_minutes').default(30),
+  status: text('status').default('scheduled'), // scheduled, confirmed, in_progress, completed, cancelled, no_show
+  appointmentType: text('appointment_type').notNull(), // consultation, follow_up, emergency
+  meetingRoomId: text('meeting_room_id'),
+  meetingUrl: text('meeting_url'),
+  reasonForVisit: text('reason_for_visit'),
+  symptoms: jsonb('symptoms'), // Array of symptoms
+  urgencyLevel: integer('urgency_level').default(1), // 1-5 scale
+  patientNotes: text('patient_notes'),
+  remindersSent: jsonb('reminders_sent'), // Track sent reminders
+  rescheduledFrom: uuid('rescheduled_from'),
+  cancelledBy: text('cancelled_by'), // patient, provider, system
+  cancellationReason: text('cancellation_reason'),
+  fee: decimal('fee', { precision: 10, scale: 2 }),
+  paymentStatus: text('payment_status').default('pending'), // pending, paid, refunded
+  paymentId: text('payment_id'), // Stripe payment intent ID
+  confirmedAt: timestamp('confirmed_at'),
+  startedAt: timestamp('started_at'),
+  endedAt: timestamp('ended_at'),
+  cancelledAt: timestamp('cancelled_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Consultation Notes
+export const consultationNotes = pgTable('consultation_notes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  appointmentId: uuid('appointment_id').references(() => telemedicineAppointments.id, { onDelete: 'cascade' }).notNull(),
+  providerId: uuid('provider_id').references(() => healthcareProviders.id, { onDelete: 'cascade' }).notNull(),
+  patientId: text('patient_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  chiefComplaint: text('chief_complaint'),
+  historyOfPresentIllness: text('history_of_present_illness'),
+  physicalExamination: text('physical_examination'),
+  vitalSigns: jsonb('vital_signs'), // Blood pressure, heart rate, etc.
+  assessment: text('assessment'),
+  diagnosis: jsonb('diagnosis'), // Array of diagnoses
+  treatmentPlan: text('treatment_plan'),
+  prescriptions: jsonb('prescriptions'), // Array of prescribed medications
+  recommendations: jsonb('recommendations'), // Array of recommendations
+  followUpInstructions: text('follow_up_instructions'),
+  followUpDate: timestamp('follow_up_date'),
+  referrals: jsonb('referrals'), // Array of specialist referrals
+  labOrders: jsonb('lab_orders'), // Array of lab test orders
+  imagingOrders: jsonb('imaging_orders'), // Array of imaging orders
+  patientEducation: text('patient_education'),
+  warningSignsDiscussed: text('warning_signs_discussed'),
+  returnPrecautions: text('return_precautions'),
+  isSharedWithPatient: boolean('is_shared_with_patient').default(false),
+  sharedAt: timestamp('shared_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Provider Reviews
+export const providerReviews = pgTable('provider_reviews', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  providerId: uuid('provider_id').references(() => healthcareProviders.id, { onDelete: 'cascade' }).notNull(),
+  patientId: text('patient_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  appointmentId: uuid('appointment_id').references(() => telemedicineAppointments.id, { onDelete: 'cascade' }).notNull(),
+  rating: integer('rating').notNull(), // 1-5 stars
+  reviewText: text('review_text'),
+  categories: jsonb('categories'), // Communication, punctuality, expertise, etc.
+  isAnonymous: boolean('is_anonymous').default(false),
+  isVerified: boolean('is_verified').default(true),
+  isPublic: boolean('is_public').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Prescription Management
+export const prescriptions = pgTable('prescriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  appointmentId: uuid('appointment_id').references(() => telemedicineAppointments.id, { onDelete: 'cascade' }).notNull(),
+  providerId: uuid('provider_id').references(() => healthcareProviders.id, { onDelete: 'cascade' }).notNull(),
+  patientId: text('patient_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  medicationName: text('medication_name').notNull(),
+  dosage: text('dosage').notNull(),
+  frequency: text('frequency').notNull(),
+  duration: text('duration').notNull(),
+  instructions: text('instructions'),
+  refills: integer('refills').default(0),
+  pharmacyInfo: jsonb('pharmacy_info'), // Preferred pharmacy details
+  status: text('status').default('active'), // active, completed, cancelled, expired
+  prescribedAt: timestamp('prescribed_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Zod schemas for telemedicine tables
+export const insertHealthcareProviderSchema = createInsertSchema(healthcareProviders);
+export const selectHealthcareProviderSchema = createSelectSchema(healthcareProviders);
+
+export const insertProviderSpecialtySchema = createInsertSchema(providerSpecialties);
+export const selectProviderSpecialtySchema = createSelectSchema(providerSpecialties);
+
+export const insertProviderAvailabilitySchema = createInsertSchema(providerAvailability);
+export const selectProviderAvailabilitySchema = createSelectSchema(providerAvailability);
+
+export const insertTelemedicineAppointmentSchema = createInsertSchema(telemedicineAppointments);
+export const selectTelemedicineAppointmentSchema = createSelectSchema(telemedicineAppointments);
+
+export const insertConsultationNotesSchema = createInsertSchema(consultationNotes);
+export const selectConsultationNotesSchema = createSelectSchema(consultationNotes);
+
+export const insertProviderReviewSchema = createInsertSchema(providerReviews);
+export const selectProviderReviewSchema = createSelectSchema(providerReviews);
+
+export const insertPrescriptionSchema = createInsertSchema(prescriptions);
+export const selectPrescriptionSchema = createSelectSchema(prescriptions);
+
+// AI Provider Tables
+export const aiProviders = pgTable('ai_providers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull().unique(),
+  specialty: text('specialty').notNull(),
+  subSpecialty: text('sub_specialty'),
+  bio: text('bio').notNull(),
+  profileImageUrl: text('profile_image_url'),
+  yearsOfExperience: integer('years_of_experience').notNull(),
+  education: jsonb('education').notNull(),
+  certifications: jsonb('certifications'),
+  languages: jsonb('languages').notNull(),
+  consultationFee: decimal('consultation_fee', { precision: 10, scale: 2 }).notNull(),
+  currency: text('currency').default('USD'),
+  rating: decimal('rating', { precision: 3, scale: 2 }).default('5.00'),
+  totalConsultations: integer('total_consultations').default(0),
+  availability: jsonb('availability').notNull(), // 24/7 availability schedule
+  responseTimeSeconds: integer('response_time_seconds').default(1),
+  aiModel: text('ai_model').default('gpt-4'),
+  personalityTraits: jsonb('personality_traits').notNull(),
+  specializations: jsonb('specializations').notNull(), // specific areas within specialty
+  consultationStyle: text('consultation_style').notNull(),
+  isActive: boolean('is_active').default(true),
+  isAvailable: boolean('is_available').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const aiConsultations = pgTable('ai_consultations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  patientId: text('patient_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  aiProviderId: uuid('ai_provider_id').references(() => aiProviders.id, { onDelete: 'cascade' }).notNull(),
+  sessionId: text('session_id').notNull().unique(),
+  status: text('status').default('active'), // active, completed, transferred
+  reasonForVisit: text('reason_for_visit').notNull(),
+  symptoms: jsonb('symptoms'),
+  urgencyLevel: integer('urgency_level').default(1),
+  patientAge: integer('patient_age'),
+  patientGender: text('patient_gender'),
+  medicalHistory: jsonb('medical_history'),
+  currentMedications: jsonb('current_medications'),
+  allergies: jsonb('allergies'),
+  aiAssessment: jsonb('ai_assessment'),
+  recommendations: jsonb('recommendations'),
+  referralSuggested: boolean('referral_suggested').default(false),
+  referralReason: text('referral_reason'),
+  handoffToHuman: boolean('handoff_to_human').default(false),
+  handoffReason: text('handoff_reason'),
+  handoffProviderId: uuid('handoff_provider_id').references(() => healthcareProviders.id),
+  satisfactionRating: integer('satisfaction_rating'),
+  feedback: text('feedback'),
+  totalMessages: integer('total_messages').default(0),
+  durationMinutes: integer('duration_minutes'),
+  startedAt: timestamp('started_at').defaultNow().notNull(),
+  endedAt: timestamp('ended_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const consultationMessages = pgTable('consultation_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  consultationId: uuid('consultation_id').references(() => aiConsultations.id, { onDelete: 'cascade' }).notNull(),
+  senderId: text('sender_id').notNull(), // user ID or 'ai'
+  senderType: text('sender_type').notNull(), // 'patient' or 'ai'
+  message: text('message').notNull(),
+  messageType: text('message_type').default('text'), // text, image, file, assessment
+  metadata: jsonb('metadata'), // additional data like AI confidence, processing time
+  isRead: boolean('is_read').default(false),
+  readAt: timestamp('read_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const providerHandoffs = pgTable('provider_handoffs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  aiConsultationId: uuid('ai_consultation_id').references(() => aiConsultations.id, { onDelete: 'cascade' }).notNull(),
+  fromAiProviderId: uuid('from_ai_provider_id').references(() => aiProviders.id, { onDelete: 'cascade' }).notNull(),
+  toHumanProviderId: uuid('to_human_provider_id').references(() => healthcareProviders.id, { onDelete: 'cascade' }).notNull(),
+  reason: text('reason').notNull(),
+  aiSummary: text('ai_summary').notNull(),
+  patientConsent: boolean('patient_consent').default(false),
+  status: text('status').default('pending'), // pending, accepted, declined, completed
+  urgencyLevel: integer('urgency_level').default(1),
+  scheduledAppointmentId: uuid('scheduled_appointment_id').references(() => telemedicineAppointments.id),
+  handoffNotes: text('handoff_notes'),
+  responseTime: integer('response_time'), // minutes to respond
+  acceptedAt: timestamp('accepted_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Zod schemas for AI provider tables
+export const insertAiProviderSchema = createInsertSchema(aiProviders);
+export const selectAiProviderSchema = createSelectSchema(aiProviders);
+
+export const insertAiConsultationSchema = createInsertSchema(aiConsultations);
+export const selectAiConsultationSchema = createSelectSchema(aiConsultations);
+
+export const insertConsultationMessageSchema = createInsertSchema(consultationMessages);
+export const selectConsultationMessageSchema = createSelectSchema(consultationMessages);
+
+export const insertProviderHandoffSchema = createInsertSchema(providerHandoffs);
+export const selectProviderHandoffSchema = createSelectSchema(providerHandoffs);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -323,3 +593,25 @@ export type NewWebsocketConnection = typeof websocketConnections.$inferInsert;
 
 export type NotificationQueue = typeof notificationQueue.$inferSelect;
 export type NewNotificationQueue = typeof notificationQueue.$inferInsert;
+
+// Telemedicine types
+export type HealthcareProvider = typeof healthcareProviders.$inferSelect;
+export type NewHealthcareProvider = typeof healthcareProviders.$inferInsert;
+
+export type ProviderSpecialty = typeof providerSpecialties.$inferSelect;
+export type NewProviderSpecialty = typeof providerSpecialties.$inferInsert;
+
+export type ProviderAvailability = typeof providerAvailability.$inferSelect;
+export type NewProviderAvailability = typeof providerAvailability.$inferInsert;
+
+export type TelemedicineAppointment = typeof telemedicineAppointments.$inferSelect;
+export type NewTelemedicineAppointment = typeof telemedicineAppointments.$inferInsert;
+
+export type ConsultationNotes = typeof consultationNotes.$inferSelect;
+export type NewConsultationNotes = typeof consultationNotes.$inferInsert;
+
+export type ProviderReview = typeof providerReviews.$inferSelect;
+export type NewProviderReview = typeof providerReviews.$inferInsert;
+
+export type Prescription = typeof prescriptions.$inferSelect;
+export type NewPrescription = typeof prescriptions.$inferInsert;

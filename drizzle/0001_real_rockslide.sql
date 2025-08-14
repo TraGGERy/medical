@@ -1,0 +1,1 @@
+ALTER TABLE "telemedicine_appointments" DROP CONSTRAINT "telemedicine_appointments_rescheduled_from_telemedicine_appointments_id_fk";

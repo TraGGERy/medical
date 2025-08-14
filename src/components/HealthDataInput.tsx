@@ -305,7 +305,7 @@ export default function HealthDataInput({ onDataSubmitted, className }: HealthDa
                     type="number"
                     step="0.1"
                     value={value}
-                    onChange={(e) => setValue(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(e.target.value)}
                     placeholder={selectedType?.placeholder || 'Enter value'}
                     className="pr-12"
                   />

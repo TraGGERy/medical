@@ -1,7 +1,14 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@/components/Button';
+import { useUser } from '@clerk/nextjs';
+import AuthLoadingSpinner from '@/components/AuthLoadingSpinner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, Star, Users, Clock, Shield, Heart, Brain, Activity, Stethoscope, UserCheck, Smartphone, FileText, Lock, Calendar } from 'lucide-react';
+import { toast } from 'sonner';
 import FeatureCard from '@/components/FeatureCard';
 import ProcessStep from '@/components/ProcessStep';
 import Testimonial from '@/components/Testimonial';
@@ -9,8 +16,33 @@ import UrgencyBanner from '@/components/UrgencyBanner';
 import PricingCard from '@/components/PricingCard';
 import Header from '@/components/Header';
 
-export default function LandingPage() {
+export default function HomePage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useUser();
+
+  // Check authentication status and redirect if logged in
+  useEffect(() => {
+    if (isLoaded) {
+      if (isSignedIn) {
+        // Add a small delay for smooth transition before redirect
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 800); // 800ms delay for smooth loading animation
+        return;
+      }
+      // User is not logged in, show the landing page with smooth transition
+      setTimeout(() => {
+        setIsCheckingAuth(false);
+      }, 600); // 600ms delay for smooth loading completion
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  // Show loading spinner while checking authentication
+  if (!isLoaded || isCheckingAuth) {
+    return <AuthLoadingSpinner message="Loading your personalized experience..." />;
+  }
 
   const handleHealthCheck = () => {
     router.push('/health-check');
@@ -40,38 +72,49 @@ export default function LandingPage() {
             </div>
             
             <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-4 animate-float leading-tight">
-              Get Your Health Insights in 
-              <span className="text-yellow-300 block sm:inline"> 2 Minutes</span>
+              Telemedicine Platform
+              <span className="text-yellow-300 block">Healthcare at Your Fingertips</span>
             </h1>
             <p className="text-base sm:text-lg lg:text-xl mb-4 opacity-90 max-w-3xl mx-auto">
-              AI-powered symptom analysis to help you understand your health better.
+              Connect with qualified healthcare providers from the comfort of your home. AI-powered symptom analysis meets virtual consultations.
             </p>
             <p className="text-xs sm:text-sm mb-6 sm:mb-8 opacity-80 px-4">
-              ✅ AI-Powered Analysis • ✅ HIPAA Compliant • ✅ Educational Health Insights
+              ✅ Virtual Consultations • ✅ AI-Powered Analysis • ✅ HIPAA Compliant • ✅ Digital Prescriptions
             </p>
             
             {/* Value Proposition */}
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 max-w-2xl mx-auto">
-              <p className="text-base sm:text-lg font-semibold mb-2">🎯 What you get:</p>
+              <p className="text-base sm:text-lg font-semibold mb-2">🎯 Complete Healthcare Solution:</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm sm:text-base text-left">
-                <div>• AI symptom analysis</div>
-                <div>• Health insights & education</div>
-                <div>• Wellness recommendations</div>
-                <div>• When to seek medical care</div>
+                <div>• Virtual doctor consultations</div>
+                <div>• AI symptom pre-screening</div>
+                <div>• Digital prescriptions</div>
+                <div>• Secure video calls</div>
+                <div>• 24/7 health monitoring</div>
+                <div>• Follow-up care tracking</div>
               </div>
             </div>
 
             <div className="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center items-center">
-              <Button 
-                onClick={handleHealthCheck}
-                size="lg"
-                className="animate-pulse-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto"
-              >
-                🚀 Get FREE Health Insights Now
-              </Button>
-              <div className="text-xs sm:text-sm opacity-80 mt-4 sm:mt-0">
-                <p>⏰ Takes less than 2 minutes</p>
-                <p>💳 No credit card required</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Button 
+                  onClick={() => router.push('/telemedicine')}
+                  size="lg"
+                  className="animate-pulse-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                >
+                  📞 Book Virtual Consultation
+                </Button>
+                <Button 
+                  onClick={handleHealthCheck}
+                  size="lg"
+                  className="text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                >
+                  🤖 AI Health Analysis
+                </Button>
+              </div>
+              <div className="text-xs sm:text-sm opacity-80 mt-4">
+                <p>⏰ Instant AI analysis • 📅 Same-day appointments available</p>
+                <p>💳 No credit card required for AI analysis</p>
               </div>
             </div>
           </div>
@@ -81,26 +124,62 @@ export default function LandingPage() {
       {/* How It Works */}
       <section id="how-it-works" className="py-12 sm:py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-12 animate-fade-in-up">How MediScope AI Works</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            <ProcessStep
-              step={1}
-              title="Enter Your Symptoms"
-              description="Type symptoms or upload lab reports for AI analysis."
-              delay={200}
-            />
-            <ProcessStep
-              step={2}
-              title="AI Analysis"
-              description="Gemini 2.5 + o3 models process data and generate insights."
-              delay={400}
-            />
-            <ProcessStep
-              step={3}
-              title="Get Your Insights"
-              description="Receive a detailed health insights report with wellness recommendations."
-              delay={600}
-            />
+          <h2 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-12 animate-fade-in-up">How Our Telemedicine Platform Works</h2>
+          
+          {/* AI Analysis Flow */}
+          <div className="mb-12">
+            <h3 className="text-xl font-semibold mb-6 text-blue-600">🤖 AI-Powered Pre-Screening</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              <ProcessStep
+                step={1}
+                title="Enter Your Symptoms"
+                description="Type symptoms or upload lab reports for AI analysis."
+                delay={200}
+              />
+              <ProcessStep
+                step={2}
+                title="AI Analysis"
+                description="Advanced AI models process data and generate health insights."
+                delay={400}
+              />
+              <ProcessStep
+                step={3}
+                title="Get Recommendations"
+                description="Receive insights and recommendations for next steps."
+                delay={600}
+              />
+            </div>
+          </div>
+
+          {/* Telemedicine Flow */}
+          <div>
+            <h3 className="text-xl font-semibold mb-6 text-green-600">📞 Virtual Consultation Process</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+              <ProcessStep
+                step={1}
+                title="Book Appointment"
+                description="Schedule with certified healthcare providers based on your needs."
+                delay={200}
+              />
+              <ProcessStep
+                step={2}
+                title="Pre-Consultation"
+                description="Share AI analysis results and medical history securely."
+                delay={400}
+              />
+              <ProcessStep
+                step={3}
+                title="Virtual Visit"
+                description="Connect via secure video call for professional consultation."
+                delay={600}
+              />
+              <ProcessStep
+                step={4}
+                title="Follow-Up Care"
+                description="Receive digital prescriptions and ongoing care coordination."
+                delay={800}
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -108,25 +187,43 @@ export default function LandingPage() {
       {/* Features */}
       <section id="features" className="py-12 sm:py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-12 animate-fade-in-up">Why Choose MediScope AI?</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-12 animate-fade-in-up">Why Choose Our Telemedicine Platform?</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <FeatureCard
-              icon="⚡"
-              title="Instant Insights"
-              description="Get health analysis in minutes, anytime, anywhere."
+              icon="👨‍⚕️"
+              title="Certified Doctors"
+              description="Connect with licensed healthcare providers available 24/7."
               delay={100}
             />
             <FeatureCard
-              icon="🔍"
-              title="AI-Powered Analysis"
-              description="Powered by cutting-edge AI for educational health insights."
+              icon="🤖"
+              title="AI-Powered Pre-Screening"
+              description="Smart symptom analysis helps doctors understand your condition faster."
               delay={200}
             />
             <FeatureCard
-              icon="🔒"
-              title="Private & Secure"
-              description="Your data is encrypted and HIPAA/GDPR compliant."
+              icon="📱"
+              title="Seamless Experience"
+              description="Book, consult, and follow-up all from your mobile device."
               delay={300}
+            />
+            <FeatureCard
+              icon="💊"
+              title="Digital Prescriptions"
+              description="Receive prescriptions electronically and track your medications."
+              delay={400}
+            />
+            <FeatureCard
+              icon="🔒"
+              title="HIPAA Compliant"
+              description="Bank-level security ensures your health data stays private."
+              delay={500}
+            />
+            <FeatureCard
+              icon="⚡"
+              title="Same-Day Appointments"
+              description="Get care when you need it with flexible scheduling options."
+              delay={600}
             />
           </div>
         </div>
@@ -136,29 +233,29 @@ export default function LandingPage() {
       <section className="py-12 sm:py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Join 50,000+ People Who Trust MediScope AI</h2>
-            <p className="text-gray-600">Real stories from real users</p>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Join 50,000+ People Who Trust Our Telemedicine Platform</h2>
+            <p className="text-gray-600">Real stories from patients and healthcare providers</p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
             <Testimonial
               name="Sarah Johnson"
               role="Working Mom"
-              content="Saved me a 3-hour ER visit! The AI correctly identified my symptoms and told me it wasn&apos;t urgent. Got the right treatment the next day."
+              content="The AI pre-screening helped my doctor understand my symptoms before our video call. Got diagnosed and treated without leaving home!"
               avatar="SJ"
               rating={5}
             />
             <Testimonial
               name="Dr. Michael Chen"
-              role="Family Physician"
-              content="I recommend this to my patients for initial screening. The accuracy is impressive and helps them make informed decisions about seeking care."
+              role="Telemedicine Provider"
+              content="The AI analysis gives me valuable insights before consultations. My patients come prepared, making our virtual visits more efficient and effective."
               avatar="MC"
               rating={5}
             />
             <Testimonial
               name="Emma Rodriguez"
               role="College Student"
-              content="As someone without insurance, this was a lifesaver. Got a detailed report for free and knew exactly what to do next."
+              content="Booked a same-day virtual appointment when I felt sick. The doctor prescribed medication digitally - so convenient and affordable!"
               avatar="ER"
               rating={5}
             />
@@ -167,24 +264,24 @@ export default function LandingPage() {
           {/* Stats with social proof */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 text-center">
             <div className="animate-fade-in-up">
-              <div className="text-4xl font-bold text-blue-600 mb-2">AI</div>
-              <p className="text-gray-600">Powered Analysis</p>
-              <p className="text-xs text-gray-500">Advanced health insights</p>
+              <div className="text-4xl font-bold text-blue-600 mb-2">500+</div>
+              <p className="text-gray-600">Licensed Doctors</p>
+              <p className="text-xs text-gray-500">Certified healthcare providers</p>
             </div>
             <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-              <div className="text-4xl font-bold text-blue-600 mb-2">&lt;2min</div>
-              <p className="text-gray-600">Average Analysis Time</p>
-              <p className="text-xs text-gray-500">Quick health insights</p>
+              <div className="text-4xl font-bold text-green-600 mb-2">15min</div>
+              <p className="text-gray-600">Average Wait Time</p>
+              <p className="text-xs text-gray-500">Quick virtual consultations</p>
             </div>
             <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
               <div className="text-4xl font-bold text-blue-600 mb-2">50K+</div>
-              <p className="text-gray-600">Users Helped</p>
-              <p className="text-xs text-gray-500">Growing community</p>
+              <p className="text-gray-600">Patients Served</p>
+              <p className="text-xs text-gray-500">Growing telemedicine community</p>
             </div>
             <div className="animate-fade-in-up" style={{ animationDelay: '600ms' }}>
-              <div className="text-4xl font-bold text-blue-600 mb-2">24/7</div>
-              <p className="text-gray-600">Available</p>
-              <p className="text-xs text-gray-500">Anytime health insights</p>
+              <div className="text-4xl font-bold text-purple-600 mb-2">98%</div>
+              <p className="text-gray-600">Satisfaction Rate</p>
+              <p className="text-xs text-gray-500">Happy patients & providers</p>
             </div>
           </div>
         </div>
@@ -194,53 +291,55 @@ export default function LandingPage() {
       <section id="pricing" className="py-12 sm:py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Get 5 FREE Reports Every Month</h2>
-            <p className="text-gray-600">Choose your plan - upgrade anytime for unlimited reports</p>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Affordable Healthcare Plans</h2>
+            <p className="text-gray-600">AI analysis + virtual consultations - choose what works for you</p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
             <PricingCard
-              title="Free Plan"
+              title="AI Analysis Only"
               price="$0"
               features={[
-                "5 Free health reports per month",
+                "5 Free AI health reports per month",
                 "Basic symptom analysis",
                 "General recommendations",
-                "Email support"
+                "Email support",
+                "Health insights dashboard"
               ]}
-              buttonText="Start Free Plan"
+              buttonText="Start Free Analysis"
               onButtonClick={handleHealthCheck}
             />
             
             <PricingCard
-              title="Pro Plan"
-              price="$9.99"
-              originalPrice="$19.99"
+              title="Telemedicine Pro"
+              price="$29.99"
+              originalPrice="$49.99"
               features={[
-                "Unlimited health reports",
-                "Advanced AI analysis",
-                "Detailed treatment plans",
-                "Priority support",
+                "Unlimited AI health reports",
+                "2 Virtual consultations/month",
+                "Digital prescriptions",
+                "Priority doctor matching",
                 "Lab report analysis",
-                "Follow-up tracking"
+                "24/7 chat support"
               ]}
               isPopular={true}
-              buttonText="Get Pro Access"
+              buttonText="Get Telemedicine Access"
               onButtonClick={handleEarlyAccess}
             />
             
             <PricingCard
-              title="Family Plan"
-              price="$19.99"
-              originalPrice="$39.99"
+              title="Family Care Plan"
+              price="$59.99"
+              originalPrice="$99.99"
               features={[
                 "Up to 5 family members",
-                "All Pro features",
+                "Unlimited consultations",
                 "Family health dashboard",
-                "Pediatric analysis",
-                "24/7 phone support"
+                "Pediatric & adult care",
+                "Emergency consultation access",
+                "Dedicated family coordinator"
               ]}
-              buttonText="Choose Family"
+              buttonText="Choose Family Plan"
               onButtonClick={handleEarlyAccess}
             />
           </div>
@@ -256,36 +355,45 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold mb-4 animate-fade-in-up">
-            Don&apos;t Wait Until It&apos;s Too Late
+            Healthcare When You Need It Most
           </h2>
           <p className="mb-6 text-base sm:text-lg opacity-90 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-            Early detection saves lives. Get your health report now - completely FREE.
+            Don&apos;t wait for appointments. Get AI-powered health insights instantly or book a virtual consultation with certified doctors.
           </p>
           
           {/* Risk Reversal */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 max-w-2xl mx-auto">
             <h3 className="font-bold mb-4 text-base sm:text-lg">🛡️ Our Promise to You:</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm">
-              <div>✅ 5 Free reports every month</div>
-              <div>✅ No hidden fees</div>
+              <div>✅ 5 Free AI reports monthly</div>
+              <div>✅ Licensed healthcare providers</div>
+              <div>✅ Same-day appointments</div>
+              <div>✅ HIPAA compliant & secure</div>
+              <div>✅ Digital prescriptions</div>
               <div>✅ Cancel anytime</div>
-              <div>✅ HIPAA compliant</div>
             </div>
           </div>
 
-          <div className="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button 
+              onClick={() => router.push('/telemedicine')}
+              size="lg"
+              className="animate-pulse-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto bg-green-600 hover:bg-green-700"
+            >
+              📞 Book Virtual Consultation
+            </Button>
             <Button 
               onClick={handleHealthCheck}
               size="lg"
-              className="animate-pulse-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto"
+              className="text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto"
             >
-              🚨 Get My 5 FREE Health Reports Now
+              🤖 Get FREE AI Analysis
             </Button>
           </div>
           
           <div className="mt-6 text-xs sm:text-sm opacity-80 space-y-1">
-            <p>⚡ Over 500 people used this in the last 24 hours</p>
-            <p>🔒 Your data is 100% secure and private</p>
+            <p>⚡ Over 200 consultations completed today</p>
+            <p>🔒 Your health data is 100% secure and private</p>
           </div>
         </div>
       </section>

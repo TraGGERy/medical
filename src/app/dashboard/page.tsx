@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   Activity, 
@@ -17,15 +18,22 @@ import HealthCheckHistory from '@/components/dashboard/HealthCheckHistory';
 import NewDiagnostic from '@/components/dashboard/NewDiagnostic';
 import ReportViewer from '@/components/dashboard/ReportViewer';
 import ProfileSettings from '@/components/dashboard/ProfileSettings';
-import AIHealthAssistant from '@/components/dashboard/AIHealthAssistant';
+
 import PrivacySettings from '@/components/dashboard/PrivacySettings';
 import SubscriptionStatus from '@/components/dashboard/SubscriptionStatus';
 import RealtimeDashboard from '@/components/RealtimeDashboard';
 import DeviceManagement from '@/components/devices/DeviceManagement';
-import StatCard from '@/components/ui/StatCard';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import TelemedicineOverview from '@/components/telemedicine/TelemedicineOverview';
+import AppointmentBooking from '@/components/telemedicine/AppointmentBooking';
+import MyAppointments from '@/components/telemedicine/MyAppointments';
+
+import ConsultationHistory from '@/components/dashboard/ConsultationHistory';
+import ActiveConsultationChat from '@/components/dashboard/ActiveConsultationChat';
+import StatCard from '@/components/ui/statcard';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 // Type definition for health report from API
 interface HealthReport {
@@ -74,8 +82,81 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const { user } = useUser();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedReport] = useState(null);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [activeConsultationId, setActiveConsultationId] = useState<string | null>(null);
+  const [isLoadingLastConsultation, setIsLoadingLastConsultation] = useState(false);
+
+  // Auto-load last active consultation when switching to active-chat tab
+  useEffect(() => {
+    const loadLastActiveConsultation = async () => {
+      if (activeTab === 'active-chat' && !activeConsultationId && !isLoadingLastConsultation) {
+        console.log('🔄 Dashboard - Auto-loading last active consultation');
+        setIsLoadingLastConsultation(true);
+        
+        try {
+          const response = await fetch('/api/ai-consultations/last-active');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.consultation) {
+              console.log('✅ Dashboard - Found last active consultation:', data.consultation.id);
+              setActiveConsultationId(data.consultation.id);
+              toast.success('Resumed your last consultation');
+            } else {
+              console.log('ℹ️ Dashboard - No active consultation found');
+            }
+          } else {
+            console.error('❌ Dashboard - Failed to fetch last consultation:', response.status);
+          }
+        } catch (error) {
+          console.error('❌ Dashboard - Error loading last consultation:', error);
+        } finally {
+          setIsLoadingLastConsultation(false);
+        }
+      }
+    };
+
+    loadLastActiveConsultation();
+  }, [activeTab, activeConsultationId, isLoadingLastConsultation]);
+
+  const handleBookAppointment = () => {
+    setBookingLoading(true);
+    // Simulate loading for better UX
+    setTimeout(() => {
+      setShowBookingForm(true);
+      setBookingLoading(false);
+    }, 300);
+  };
+
+  const handleBookingComplete = (consultationId?: string) => {
+    console.log('🎯 Dashboard - handleBookingComplete called:', {
+      consultationId,
+      timestamp: new Date().toISOString()
+    });
+    
+    setShowBookingForm(false);
+    if (consultationId) {
+      // AI consultation started, clear any previous consultation and switch to new one
+      console.log('✅ Dashboard - Setting new consultation ID:', consultationId);
+      setActiveConsultationId(consultationId);
+      console.log('🔄 Dashboard - Switching to active-chat tab');
+      setActiveTab('active-chat');
+      toast.success('New AI consultation started!');
+      console.log('📱 Dashboard - State updated successfully');
+    } else {
+      // Regular appointment booked
+      console.log('📅 Dashboard - Regular appointment booked');
+      toast.success('Appointment booked successfully!');
+    }
+  };
+
+  const handleCancelBooking = () => {
+    setShowBookingForm(false);
+    setBookingLoading(false);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -83,8 +164,56 @@ export default function Dashboard() {
         return <DashboardOverview onStartDiagnostic={() => setActiveTab('new-diagnostic')} />;
       case 'history':
         return <HealthCheckHistory />;
+      case 'consultation-history':
+        return (
+          <ConsultationHistory 
+            onResumeChat={(consultationId) => {
+              setActiveConsultationId(consultationId);
+              setActiveTab('active-chat');
+            }}
+          />
+        );
       case 'new-diagnostic':
         return <NewDiagnostic onComplete={() => setActiveTab('history')} />;
+      case 'telemedicine-overview':
+        if (showBookingForm) {
+          return (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleCancelBooking}
+                  className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Overview
+                </button>
+              </div>
+              <AppointmentBooking 
+                 onComplete={handleBookingComplete} 
+                 onCancel={handleCancelBooking}
+               />
+            </div>
+          );
+        }
+        return (
+          <TelemedicineOverview 
+            onBookAppointment={handleBookAppointment}
+            bookingLoading={bookingLoading}
+          />
+        );
+      case 'my-appointments':
+        return (
+          <MyAppointments 
+            onResumeChat={(consultationId) => {
+              console.log('🎯 Dashboard - MyAppointments onResumeChat called:', consultationId);
+              setActiveConsultationId(consultationId);
+              setActiveTab('active-chat');
+            }}
+          />
+        );
+
       case 'realtime-monitoring':
         return <RealtimeDashboard userId={user?.id || ''} className="p-6" />;
       case 'device-management':
@@ -93,17 +222,66 @@ export default function Dashboard() {
         return <ReportViewer report={selectedReport} onBack={() => setActiveTab('history')} />;
       case 'profile':
         return <ProfileSettings />;
-      case 'ai-assistant':
-        return <AIHealthAssistant />;
+
       case 'privacy':
         return <PrivacySettings />;
+      case 'active-chat':
+        console.log('🎬 Dashboard - Rendering active-chat tab:', {
+          activeConsultationId,
+          hasConsultationId: !!activeConsultationId,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (activeConsultationId) {
+          console.log('✅ Dashboard - Rendering ActiveConsultationChat with ID:', activeConsultationId);
+          return (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h1 className="text-3xl font-bold text-gray-900">Active Consultation</h1>
+                <Button 
+                  onClick={() => {
+                    console.log('🔚 Dashboard - Ending chat manually');
+                    setActiveConsultationId(null);
+                  }}
+                  variant="outline"
+                >
+                  Back to Chat List
+                </Button>
+              </div>
+              <ActiveConsultationChat 
+                consultationId={activeConsultationId}
+                onConsultationEnd={() => {
+                  console.log('🏁 Dashboard - Consultation ended via callback');
+                  setActiveConsultationId(null);
+                }}
+              />
+            </div>
+          );
+        }
+        console.log('⚠️ Dashboard - No active consultation ID, showing consultation list');
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-gray-900">Active Chats</h1>
+            </div>
+            <ConsultationHistory 
+              onResumeChat={(consultationId) => {
+                setActiveConsultationId(consultationId);
+              }}
+            />
+          </div>
+        );
       default:
         return <DashboardOverview onStartDiagnostic={() => setActiveTab('new-diagnostic')} />;
     }
   };
 
   return (
-    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+    <DashboardLayout 
+      activeTab={activeTab} 
+      onTabChange={setActiveTab}
+      activeConsultationId={activeConsultationId || undefined}
+    >
       {renderContent()}
     </DashboardLayout>
   );
@@ -260,44 +438,29 @@ function DashboardOverview({ onStartDiagnostic }: { onStartDiagnostic: () => voi
           <StatCard
             title="Total Reports"
             value={stats.totalReports}
-            icon={FileText}
-            variant="default"
-            loading={loading}
-            trend={stats.totalReports > 0 ? 'up' : 'neutral'}
-            trendValue={12}
+            icon={<FileText className="h-4 w-4" />}
+            trend={stats.totalReports > 0 ? { value: 12, isPositive: true } : { value: 0, isPositive: false }}
           />
           
           <StatCard
             title="Health Score"
-            value={healthScore}
-            icon={Shield}
-            variant={healthScore >= 80 ? 'success' : healthScore >= 60 ? 'warning' : 'danger'}
-            suffix="%"
-            showProgress
-            maxValue={100}
-            loading={loading}
-            trend={healthScore >= 70 ? 'up' : 'down'}
-            trendValue={5}
+            value={`${healthScore}%`}
+            icon={<Shield className="h-4 w-4" />}
+            trend={healthScore >= 70 ? { value: 5, isPositive: true } : { value: 5, isPositive: false }}
           />
           
           <StatCard
             title="Normal Results"
             value={stats.normalResults}
-            icon={CheckCircle}
-            variant="success"
-            loading={loading}
-            trend="up"
-            trendValue={8}
+            icon={<CheckCircle className="h-4 w-4" />}
+            trend={{ value: 8, isPositive: true }}
           />
           
           <StatCard
             title="This Month"
             value={stats.reportsThisMonth}
-            icon={Calendar}
-            variant="default"
-            loading={loading}
-            trend={stats.reportsThisMonth > 0 ? 'up' : 'neutral'}
-            trendValue={15}
+            icon={<Calendar className="h-4 w-4" />}
+            trend={stats.reportsThisMonth > 0 ? { value: 15, isPositive: true } : { value: 0, isPositive: false }}
           />
         </div>
       </motion.div>

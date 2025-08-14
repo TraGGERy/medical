@@ -14,9 +14,9 @@ import {
   Shield,
   Clock
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 export default function HealthCheckPage() {
@@ -198,7 +198,7 @@ export default function HealthCheckPage() {
                         <Clock className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <Input
                           value={additionalInfo.duration}
-                          onChange={(e) => setAdditionalInfo({...additionalInfo, duration: e.target.value})}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAdditionalInfo({...additionalInfo, duration: e.target.value})}
                           placeholder="How long have you had these symptoms?"
                           className="pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
                         />

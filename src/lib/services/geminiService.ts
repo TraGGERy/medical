@@ -51,6 +51,76 @@ export interface HealthReport {
   followUpActions: string[];
 }
 
+export interface HealthPredictionRequest {
+  biometricData: BiometricReading[];
+  medicalHistory?: string;
+  lifestyle?: {
+    exercise: string;
+    diet: string;
+    sleep: string;
+    stress: string;
+    smoking: boolean;
+    alcohol: string;
+  };
+  familyHistory?: string[];
+  currentSymptoms?: string[];
+  medications?: string[];
+}
+
+export interface BiometricReading {
+  type: string;
+  value: number;
+  unit: string;
+  timestamp: Date;
+  deviceId?: string;
+}
+
+export interface HealthPrediction {
+  riskScore: number;
+  riskLevel: 'low' | 'moderate' | 'high' | 'critical';
+  predictions: {
+    condition: string;
+    probability: number;
+    timeframe: string;
+    riskFactors: string[];
+  }[];
+  recommendations: {
+    immediate: string[];
+    shortTerm: string[];
+    longTerm: string[];
+  };
+  trends: {
+    metric: string;
+    trend: 'improving' | 'stable' | 'declining';
+    confidence: number;
+    analysis: string;
+  }[];
+  alerts: {
+    type: 'warning' | 'critical';
+    message: string;
+    action: string;
+  }[];
+}
+
+export interface TrendAnalysisRequest {
+  biometricHistory: BiometricReading[];
+  timeframe: 'week' | 'month' | 'quarter' | 'year';
+  metrics: string[];
+}
+
+export interface TrendAnalysis {
+  summary: string;
+  trends: {
+    metric: string;
+    direction: 'improving' | 'stable' | 'declining';
+    changePercentage: number;
+    significance: 'low' | 'moderate' | 'high';
+    analysis: string;
+  }[];
+  insights: string[];
+  recommendations: string[];
+}
+
 export interface FullDiagnosticResponse {
   urgencyLevel: 'low' | 'medium' | 'high' | 'emergency';
   analysis: string;
@@ -158,6 +228,34 @@ export class GeminiHealthService {
     } catch (error) {
       console.error('Error in chat:', error);
       throw new Error('Failed to get response from AI assistant. Please try again.');
+    }
+  }
+
+  async generatePredictiveHealthInsights(request: HealthPredictionRequest): Promise<HealthPrediction> {
+    try {
+      const prompt = this.buildPredictiveHealthPrompt(request);
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      return this.parsePredictiveHealthResponse(text);
+    } catch (error) {
+      console.error('Error generating predictive health insights:', error);
+      throw new Error('Failed to generate predictive health insights. Please try again.');
+    }
+  }
+
+  async analyzeTrends(request: TrendAnalysisRequest): Promise<TrendAnalysis> {
+    try {
+      const prompt = this.buildTrendAnalysisPrompt(request);
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      return this.parseTrendAnalysisResponse(text);
+    } catch (error) {
+      console.error('Error analyzing health trends:', error);
+      throw new Error('Failed to analyze health trends. Please try again.');
     }
   }
 
@@ -424,6 +522,178 @@ export class GeminiHealthService {
       riskFactors: ['Unable to determine specific risk factors'],
       recommendations: ['Consult with a healthcare professional for proper evaluation'],
       followUpActions: ['Schedule an appointment with your healthcare provider']
+    };
+  }
+
+  private buildPredictiveHealthPrompt(request: HealthPredictionRequest): string {
+    const biometricSummary = request.biometricData.map(reading => 
+      `${reading.type}: ${reading.value} ${reading.unit} (${reading.timestamp.toISOString()})`
+    ).join('\n');
+
+    return `
+      You are an advanced AI health prediction system. Analyze the following comprehensive health data to provide predictive insights:
+
+      BIOMETRIC DATA (Recent Readings):
+      ${biometricSummary}
+
+      ${request.medicalHistory ? `MEDICAL HISTORY: ${request.medicalHistory}` : ''}
+      ${request.lifestyle ? `LIFESTYLE FACTORS:
+      - Exercise: ${request.lifestyle.exercise}
+      - Diet: ${request.lifestyle.diet}
+      - Sleep: ${request.lifestyle.sleep}
+      - Stress: ${request.lifestyle.stress}
+      - Smoking: ${request.lifestyle.smoking ? 'Yes' : 'No'}
+      - Alcohol: ${request.lifestyle.alcohol}` : ''}
+      ${request.familyHistory ? `FAMILY HISTORY: ${request.familyHistory.join(', ')}` : ''}
+      ${request.currentSymptoms ? `CURRENT SYMPTOMS: ${request.currentSymptoms.join(', ')}` : ''}
+      ${request.medications ? `CURRENT MEDICATIONS: ${request.medications.join(', ')}` : ''}
+
+      Please provide your response in the following JSON format:
+      {
+        "riskScore": 0-100,
+        "riskLevel": "low|moderate|high|critical",
+        "predictions": [
+          {
+            "condition": "condition name",
+            "probability": 0-100,
+            "timeframe": "timeframe description",
+            "riskFactors": ["factor1", "factor2"]
+          }
+        ],
+        "recommendations": {
+          "immediate": ["action1", "action2"],
+          "shortTerm": ["action1", "action2"],
+          "longTerm": ["action1", "action2"]
+        },
+        "trends": [
+          {
+            "metric": "metric name",
+            "trend": "improving|stable|declining",
+            "confidence": 0-100,
+            "analysis": "detailed analysis"
+          }
+        ],
+        "alerts": [
+          {
+            "type": "warning|critical",
+            "message": "alert message",
+            "action": "recommended action"
+          }
+        ]
+      }
+
+      Guidelines:
+      - Analyze patterns in biometric data for early warning signs
+      - Consider lifestyle factors in risk assessment
+      - Provide actionable, evidence-based recommendations
+      - Include confidence levels for predictions
+      - Identify concerning trends that need attention
+      - Always emphasize the need for professional medical consultation
+    `;
+  }
+
+  private buildTrendAnalysisPrompt(request: TrendAnalysisRequest): string {
+    const dataByMetric = request.biometricHistory.reduce((acc, reading) => {
+      if (!acc[reading.type]) acc[reading.type] = [];
+      acc[reading.type].push(`${reading.value} ${reading.unit} (${reading.timestamp.toISOString()})`);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    const dataString = Object.entries(dataByMetric)
+      .map(([metric, readings]) => `${metric}:\n${readings.join('\n')}`)
+      .join('\n\n');
+
+    return `
+      You are an AI health trend analyst. Analyze the following biometric data over the ${request.timeframe} timeframe:
+
+      BIOMETRIC DATA:
+      ${dataString}
+
+      METRICS TO ANALYZE: ${request.metrics.join(', ')}
+      TIMEFRAME: ${request.timeframe}
+
+      Please provide your response in the following JSON format:
+      {
+        "summary": "Overall trend summary",
+        "trends": [
+          {
+            "metric": "metric name",
+            "direction": "improving|stable|declining",
+            "changePercentage": percentage change,
+            "significance": "low|moderate|high",
+            "analysis": "detailed trend analysis"
+          }
+        ],
+        "insights": ["insight1", "insight2", "insight3"],
+        "recommendations": ["recommendation1", "recommendation2"]
+      }
+
+      Guidelines:
+      - Calculate percentage changes and trend directions
+      - Identify statistically significant changes
+      - Provide actionable insights based on trends
+      - Consider normal variations vs concerning patterns
+      - Recommend appropriate follow-up actions
+    `;
+  }
+
+  private parsePredictiveHealthResponse(text: string): HealthPrediction {
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          riskScore: parsed.riskScore || 0,
+          riskLevel: parsed.riskLevel || 'low',
+          predictions: parsed.predictions || [],
+          recommendations: parsed.recommendations || {
+            immediate: ['Consult with healthcare professional'],
+            shortTerm: ['Monitor symptoms'],
+            longTerm: ['Maintain healthy lifestyle']
+          },
+          trends: parsed.trends || [],
+          alerts: parsed.alerts || []
+        };
+      }
+    } catch (error) {
+      console.error('Error parsing predictive health response:', error);
+    }
+
+    return {
+      riskScore: 0,
+      riskLevel: 'low',
+      predictions: [],
+      recommendations: {
+        immediate: ['Consult with healthcare professional for proper evaluation'],
+        shortTerm: ['Monitor your health regularly'],
+        longTerm: ['Maintain healthy lifestyle habits']
+      },
+      trends: [],
+      alerts: []
+    };
+  }
+
+  private parseTrendAnalysisResponse(text: string): TrendAnalysis {
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          summary: parsed.summary || 'Trend analysis completed',
+          trends: parsed.trends || [],
+          insights: parsed.insights || [],
+          recommendations: parsed.recommendations || ['Continue monitoring your health metrics']
+        };
+      }
+    } catch (error) {
+      console.error('Error parsing trend analysis response:', error);
+    }
+
+    return {
+      summary: 'Unable to analyze trends at this time',
+      trends: [],
+      insights: ['Insufficient data for trend analysis'],
+      recommendations: ['Continue collecting health data for better insights']
     };
   }
 }

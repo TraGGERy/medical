@@ -18,7 +18,12 @@ import {
   Bell,
   Search,
   Activity,
-  Smartphone
+  Smartphone,
+  Video,
+  Calendar,
+  Clock,
+  Stethoscope,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,9 +31,10 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  activeConsultationId?: string;
 }
 
-export default function DashboardLayout({ children, activeTab, onTabChange }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, activeTab, onTabChange, activeConsultationId }: DashboardLayoutProps) {
   const router = useRouter();
   const { user } = useUser();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -48,10 +54,13 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: Home },
     { id: 'new-diagnostic', label: 'New Check', icon: Plus },
+    { id: 'active-chat', label: 'Active Chat', icon: MessageSquare },
+    { id: 'telemedicine-overview', label: 'Telemedicine', icon: Video },
+    { id: 'my-appointments', label: 'My Appointments', icon: Clock },
     { id: 'realtime-monitoring', label: 'Real-time Monitoring', icon: Activity },
     { id: 'device-management', label: 'Device Management', icon: Smartphone },
-    { id: 'history', label: 'History', icon: History },
-    { id: 'ai-assistant', label: 'AI Health Assistant', icon: Bot },
+    { id: 'history', label: 'Health Reports', icon: History },
+    { id: 'consultation-history', label: 'AI Consultations', icon: Bot },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'privacy', label: 'Privacy', icon: Shield }
   ];

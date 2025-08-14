@@ -63,6 +63,12 @@ export default function Header() {
             <a href="#faq" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
               FAQ
             </a>
+            <button 
+              onClick={() => router.push('/telemedicine')}
+              className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
+            >
+              Telemedicine
+            </button>
             {isSignedIn && (
               <button 
                 onClick={() => router.push('/dashboard')}
@@ -155,6 +161,15 @@ export default function Header() {
                 className="text-left text-gray-600 hover:text-blue-600 transition-colors font-medium py-2"
               >
                 FAQ
+              </button>
+              <button 
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  router.push('/telemedicine');
+                }}
+                className="text-left text-gray-600 hover:text-blue-600 transition-colors font-medium py-2"
+              >
+                Telemedicine
               </button>
               {isSignedIn && (
                 <button 
