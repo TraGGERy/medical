@@ -16,8 +16,6 @@
 - [x] ts_fix_29: Fix provider-handoffs/[id]/route.ts:163 - property access error (priority: High)
 - [x] ts_fix_30: Fix provider-handoffs/route.ts:39 - query where clause (priority: High)
 - [x] ts_fix_33: Fix all remaining API route files to use Promise<RouteParams> instead of RouteParams (priority: High)
-- [x] ts_fix_34: Fix StatCard component prop types in dashboard/page.tsx (icon and trend props) (priority: High)
-- [x] ts_fix_35: Fix DashboardOverview import conflict by removing duplicate import (priority: High)
 - [x] ts_fix_21: Run final TypeScript compilation check to verify all errors are resolved (priority: Medium)
 - [x] ts_fix_25: Fix ai-consultations/[id]/end/route.ts (3 errors) (priority: Medium)
 - [x] ts_fix_26: Fix ai-consultations/route.ts (3 errors) (priority: Medium)
