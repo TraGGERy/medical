@@ -18,7 +18,9 @@ import {
   FileText, 
   Star,
   Sparkles,
-  MessageCircle
+  MessageCircle,
+  UserPlus,
+  ChevronDown
 } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
@@ -87,6 +89,9 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   const [switchingDoctor, setSwitchingDoctor] = useState(false);
   const [endingConsultation, setEndingConsultation] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline' | 'reconnecting'>('online');
+  const [availableDoctors, setAvailableDoctors] = useState<AiProvider[]>([]);
+  const [showDoctorSwitch, setShowDoctorSwitch] = useState(false);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [aiResponseTimeout, setAiResponseTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isTabVisible, setIsTabVisible] = useState(true);
   const [lastMessageCount, setLastMessageCount] = useState(0);
@@ -97,6 +102,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   const continuousPollingRef = useRef<NodeJS.Timeout | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const doctorSwitchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     console.log('🔍 Active Consultation Chat - Authentication Check:', {
@@ -115,6 +121,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       console.log('✅ User authenticated, fetching consultation data');
       fetchConsultation(consultationId);
       fetchMessages(consultationId);
+      fetchAvailableDoctors(consultationId);
     }
   }, [consultationId, isSignedIn, userId]);
 
@@ -386,11 +393,60 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     };
   }, [consultation]);
 
+  // Close doctor switch dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (doctorSwitchRef.current && !doctorSwitchRef.current.contains(event.target as Node)) {
+        setShowDoctorSwitch(false);
+      }
+    };
+
+    if (showDoctorSwitch) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDoctorSwitch]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const { getToken } = useAuth();
+
+  const fetchAvailableDoctors = async (consultationId: string) => {
+    try {
+      setLoadingDoctors(true);
+      console.log('🔄 Fetching available doctors for consultation:', consultationId);
+      
+      const token = await getToken();
+      const response = await fetch(`/api/ai-consultations/${consultationId}/switch-provider`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        console.warn('⚠️ Failed to fetch available doctors:', response.status);
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('✅ Available doctors received:', {
+        count: data.providers?.length || 0,
+        currentProviderId: data.currentProviderId
+      });
+      
+      setAvailableDoctors(data.providers || []);
+    } catch (error: unknown) {
+      console.error('💥 Error fetching available doctors:', error);
+    } finally {
+      setLoadingDoctors(false);
+    }
+  };
 
   const fetchConsultation = async (consultationId: string) => {
     try {
@@ -739,6 +795,9 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       // Refresh messages to show handoff message
       await fetchMessages(consultation.id);
       
+      // Refresh available doctors list to update current provider status
+      await fetchAvailableDoctors(consultation.id);
+      
       toast.success(`Successfully switched to ${data.newProvider.name} (${data.newProvider.specialty})`, {
         duration: 4000
       });
@@ -834,6 +893,60 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                     {connectionStatus === 'online' && wsConnected ? 'Real-time' : connectionStatus === 'offline' || !wsConnected ? 'Offline' : 'Connecting'}
                   </div>
                   
+                  {/* Doctor Switch Dropdown */}
+                   {consultation?.status === 'active' && availableDoctors.length > 0 && (
+                     <div className="relative" ref={doctorSwitchRef}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowDoctorSwitch(!showDoctorSwitch)}
+                        disabled={switchingDoctor || loadingDoctors}
+                        className="flex items-center gap-1"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        Switch Doctor
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                      
+                      {showDoctorSwitch && (
+                        <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                          <div className="p-2">
+                            <div className="text-sm font-medium text-gray-700 mb-2">Available Doctors</div>
+                            {loadingDoctors ? (
+                              <div className="flex items-center justify-center py-4">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              </div>
+                            ) : (
+                              <div className="space-y-1">
+                                {availableDoctors.map((doctor) => (
+                                  <button
+                                    key={doctor.id}
+                                    onClick={() => {
+                                      switchDoctor(doctor.id, `Switched to ${doctor.specialty} specialist`);
+                                      setShowDoctorSwitch(false);
+                                    }}
+                                    disabled={switchingDoctor || doctor.id === consultation?.aiProviderId}
+                                    className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
+                                      doctor.id === consultation?.aiProviderId
+                                        ? 'bg-blue-50 text-blue-600 cursor-not-allowed'
+                                        : 'hover:bg-gray-50 text-gray-700'
+                                    }`}
+                                  >
+                                    <div className="font-medium">{doctor.name}</div>
+                                    <div className="text-xs text-gray-500">{doctor.specialty}</div>
+                                    {doctor.id === consultation?.aiProviderId && (
+                                      <div className="text-xs text-blue-600 mt-1">Currently Active</div>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <Button variant="outline" size="sm">
                     <Phone className="h-4 w-4" />
                   </Button>
@@ -899,7 +1012,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                       >
                         <p className="whitespace-pre-wrap">{message.content}</p>
                         
-                        {/* Referral Notification */}
+                        {/* Referral Notification - Now shows info only, switching handled by header dropdown */}
                         {(message.senderType === 'ai_provider' || message.senderType === 'ai') && message.metadata?.referralNeeded && (
                           <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="flex items-start gap-2">
@@ -910,30 +1023,15 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                               </div>
                               <div className="flex-1">
                                 <h4 className="text-sm font-medium text-blue-900 mb-1">
-                                  Specialist Referral Available
+                                  Specialist Referral Recommended
                                 </h4>
-                                <p className="text-sm text-blue-700 mb-2">
+                                <p className="text-sm text-blue-700">
                                   A {message.metadata.recommendedSpecialty} specialist is recommended for your case.
                                   {message.metadata.suggestedProviderName && (
                                     <span> Dr. {message.metadata.suggestedProviderName} is available to assist you.</span>
                                   )}
+                                  <span className="block mt-1 text-blue-600 font-medium">Use the "Switch Doctor" button above to change specialists.</span>
                                 </p>
-                                {message.metadata.suggestedProvider && (
-                                  <Button
-                                    onClick={() => switchDoctor(
-                                      message.metadata.suggestedProvider,
-                                      `Referral to ${message.metadata.recommendedSpecialty} specialist`
-                                    )}
-                                    disabled={switchingDoctor}
-                                    size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                  >
-                                    {switchingDoctor ? (
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    ) : null}
-                                    Switch to Specialist
-                                  </Button>
-                                )}
                               </div>
                             </div>
                           </div>
