@@ -4,6 +4,8 @@ import { aiConsultations, consultationMessages, aiProviders } from '@/lib/db/sch
 import { eq, and, desc } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 import OpenAI from 'openai';
+import { automaticDiagnosticReportService } from '@/lib/services/automaticDiagnosticReportService';
+import { agenticDiagnosticService } from '@/lib/services/agenticDiagnosticService';
 
 interface RouteParams {
   id: string;
@@ -170,16 +172,7 @@ export async function POST(
         consultationStyle: aiProvider!.consultationStyle,
         specializations: Array.isArray(aiProvider!.specializations) ? aiProvider!.specializations : []
       },
-      {
-        aiProviderId: consultationData.aiProviderId,
-        reasonForVisit: consultationData.reasonForVisit,
-        patientAge: consultationData.patientAge ?? undefined,
-        patientGender: consultationData.patientGender ?? undefined,
-        symptoms: Array.isArray(consultationData.symptoms) ? consultationData.symptoms : [],
-        medicalHistory: Array.isArray(consultationData.medicalHistory) ? consultationData.medicalHistory : [],
-        currentMedications: Array.isArray(consultationData.currentMedications) ? consultationData.currentMedications : [],
-        allergies: Array.isArray(consultationData.allergies) ? consultationData.allergies : []
-      },
+      {        aiProviderId: consultationData.aiProviderId,        patientId: consultationData.patientId,        reasonForVisit: consultationData.reasonForVisit,        patientAge: consultationData.patientAge ?? undefined,        patientGender: consultationData.patientGender ?? undefined,        symptoms: Array.isArray(consultationData.symptoms) ? consultationData.symptoms : [],        medicalHistory: Array.isArray(consultationData.medicalHistory) ? consultationData.medicalHistory : [],        currentMedications: Array.isArray(consultationData.currentMedications) ? consultationData.currentMedications : [],        allergies: Array.isArray(consultationData.allergies) ? consultationData.allergies : []      },
       content
     ).catch((error: unknown) => {
       console.error('Error generating AI response:', error);
@@ -221,6 +214,7 @@ async function generateAIResponseAsync(
   },
   consultation: {
     aiProviderId: string;
+    patientId: string;
     reasonForVisit: string;
     patientAge?: number;
     patientGender?: string;
@@ -240,7 +234,7 @@ async function generateAIResponseAsync(
       .orderBy(consultationMessages.createdAt)
       .limit(20); // Last 20 messages for context
 
-    // Generate AI response
+    // Generate AI response with enhanced agentic capabilities
     const aiResponse = await generateAIResponse(
       aiProvider,
       consultation,
@@ -332,6 +326,68 @@ async function generateAIResponseAsync(
         .where(eq(aiConsultations.id, consultationId));
     }
 
+    // Check for conversation completion and trigger automatic diagnostic report
+    try {
+      // Get all messages for analysis
+      const allMessages = await db
+        .select({
+          senderType: consultationMessages.senderType,
+          content: consultationMessages.message,
+          timestamp: consultationMessages.createdAt
+        })
+        .from(consultationMessages)
+        .where(eq(consultationMessages.consultationId, consultationId))
+        .orderBy(consultationMessages.createdAt);
+
+      const shouldTriggerResult = await agenticDiagnosticService.shouldTriggerAutomaticDiagnostic(
+        allMessages.map(msg => ({
+          senderType: msg.senderType,
+          content: msg.content,
+          timestamp: msg.timestamp?.toISOString() || new Date().toISOString()
+        })),
+        {
+          reasonForVisit: consultation.reasonForVisit,
+          aiProviderSpecialty: aiProvider.specialty,
+          patientAge: consultation.patientAge,
+          patientGender: consultation.patientGender
+        }
+      );
+
+      if (shouldTriggerResult.shouldTrigger) {
+        console.log(`[Agentic Diagnostic] Triggering automatic report for consultation ${consultationId}`);
+        
+        // Notify user that report generation is starting
+        await db.insert(consultationMessages).values({
+          consultationId,
+          senderId: aiProvider.id,
+          senderType: 'ai',
+          message: "🔄 **Generating Comprehensive Diagnostic Report**\n\nBased on our conversation, I have gathered sufficient information to provide you with a detailed diagnostic analysis. Please wait while I prepare your comprehensive report with recommendations and next steps.",
+          messageType: 'text',
+          metadata: { processingTime: 0 },
+        });
+
+        // Trigger automatic diagnostic report generation
+        await automaticDiagnosticReportService.checkAndTriggerAutomaticReport({
+          consultationId,
+          userId: consultation.patientId,
+          aiProviderId: aiProvider.id,
+          aiProviderName: aiProvider.name,
+          aiProviderSpecialty: aiProvider.specialty,
+          reasonForVisit: consultation.reasonForVisit,
+          patientAge: consultation.patientAge,
+          patientGender: consultation.patientGender,
+          messages: allMessages.map(msg => ({
+            senderType: msg.senderType,
+            content: msg.content,
+            timestamp: msg.timestamp?.toISOString() || new Date().toISOString()
+          }))
+        });
+      }
+    } catch (error) {
+      console.error('[Agentic Diagnostic] Error in automatic report generation:', error);
+      // Don't throw error to avoid breaking the main conversation flow
+    }
+
     console.log(`AI response generated for consultation ${consultationId}`);
   } catch (error: unknown) {
     console.error('Error in generateAIResponseAsync:', error);
@@ -350,6 +406,7 @@ async function generateAIResponse(
     aiModel?: string;
   },
   consultation: {
+    patientId: string;
     reasonForVisit: string;
     patientAge?: number;
     patientGender?: string;
@@ -422,6 +479,23 @@ You must follow a structured questioning approach to thoroughly understand the p
    - Possible causes or conditions
    - Recommended next steps
    - When to seek immediate care
+
+AGENTIC CONVERSATION COMPLETION ANALYSIS:
+As an intelligent AI provider, you must continuously assess whether the consultation has gathered sufficient information for a comprehensive diagnostic analysis. After each response, evaluate:
+
+- INFORMATION COMPLETENESS: Have you gathered adequate details about symptoms, duration, severity, triggers, and impact?
+- DIAGNOSTIC CLARITY: Do you have enough information to provide meaningful insights and recommendations?
+- PATIENT SATISFACTION: Has the patient's primary concerns been thoroughly addressed?
+- NATURAL CONCLUSION: Does the conversation feel complete from a medical consultation perspective?
+
+When you determine the consultation is complete and you have sufficient information for a comprehensive diagnostic report, include this EXACT phrase at the end of your response: [CONSULTATION_COMPLETE]
+
+This will trigger an automatic generation of a detailed diagnostic report for the patient. Only use this when:
+- You have gathered comprehensive symptom information
+- You understand the patient's medical context
+- You can provide meaningful diagnostic insights
+- The conversation has reached a natural conclusion
+- The patient's immediate concerns have been addressed
 
 CRITICAL SPECIALTY DETECTION AND REFERRAL PROTOCOL:
 As a ${aiProvider.specialty} specialist, you must recognize when a patient's condition falls outside your area of expertise. This platform has qualified specialists available for immediate referral. If you identify symptoms or conditions that require a different specialty, you MUST:

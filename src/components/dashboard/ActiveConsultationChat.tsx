@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,11 @@ import {
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { conversationDataCollector } from '@/lib/services/conversationDataCollector';
+import { DiagnosticCompletenessDetector } from '@/lib/services/diagnosticCompletenessDetector';
+import DiagnosticConfirmationDialog from '@/components/consultation/DiagnosticConfirmationDialog';
+import { QuickResponseConfirmDialog } from '@/components/dashboard/QuickResponseConfirmDialog';
+import type { DiagnosticTriggerResult } from '@/lib/services/diagnosticCompletenessDetector';
 
 interface Message {
   id: string;
@@ -96,13 +101,29 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   const [isTabVisible, setIsTabVisible] = useState(true);
   const [lastMessageCount, setLastMessageCount] = useState(0);
   const [wsConnected, setWsConnected] = useState(false);
+  const [isUserAtBottom, setIsUserAtBottom] = useState(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  
+  // Diagnostic-related state
+  const [showDiagnosticDialog, setShowDiagnosticDialog] = useState(false);
+  const [diagnosticTriggerResult, setDiagnosticTriggerResult] = useState<DiagnosticTriggerResult | null>(null);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<{ step: string; progress: number } | undefined>();
+  const [generatedReport, setGeneratedReport] = useState<{ id: string; downloadUrl: string; viewUrl: string } | undefined>();
+  
+  // Quick response confirmation state
+  const [showQuickResponseDialog, setShowQuickResponseDialog] = useState(false);
+  const [pendingQuickMessage, setPendingQuickMessage] = useState<{ content: string; responseTime: number } | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const continuousPollingRef = useRef<NodeJS.Timeout | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const doctorSwitchRef = useRef<HTMLDivElement>(null);
+  const diagnosticDetectorRef = useRef<DiagnosticCompletenessDetector | null>(null);
 
   useEffect(() => {
     console.log('🔍 Active Consultation Chat - Authentication Check:', {
@@ -122,12 +143,40 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       fetchConsultation(consultationId);
       fetchMessages(consultationId);
       fetchAvailableDoctors(consultationId);
+      
+      // Initialize diagnostic detector
+      if (!diagnosticDetectorRef.current) {
+        diagnosticDetectorRef.current = new DiagnosticCompletenessDetector(conversationDataCollector);
+        console.log('🔬 Diagnostic detector initialized');
+      }
+      
+      // Initialize conversation timing when consultation is loaded
+      if (consultation) {
+        const conversationStartTime = new Date(consultation.createdAt);
+        conversationDataCollector.initializeConversation(conversationStartTime);
+        console.log('⏰ Conversation timing initialized with start time:', conversationStartTime);
+      }
     }
   }, [consultationId, isSignedIn, userId]);
 
+  // Initialize scroll position check
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Check scroll position after a short delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      checkIfAtBottom();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Smart scroll behavior - only auto-scroll when user is at bottom
+  useEffect(() => {
+    if (isUserAtBottom && messages.length > 0) {
+      scrollToBottom();
+    } else if (!isUserAtBottom && messages.length > 0) {
+      setShowScrollToBottom(true);
+    }
+  }, [messages, isUserAtBottom]);
 
   // Page Visibility API to track tab focus
   useEffect(() => {
@@ -232,6 +281,123 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       }
     }
   }, [messages, aiResponsePending, aiResponseTimeout]);
+
+  // Process messages for diagnostic data collection with timing validation
+  useEffect(() => {
+    if (messages.length === 0 || !diagnosticDetectorRef.current) {
+      return;
+    }
+
+    // Check for automatic diagnostic report generation notifications
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && (lastMessage.senderType === 'ai' || lastMessage.senderType === 'ai_provider')) {
+      // Detect automatic diagnostic report generation notification
+      if (lastMessage.content.includes('🔄 **Generating Comprehensive Diagnostic Report**')) {
+        console.log('🤖 Automatic diagnostic report generation detected');
+        setIsGeneratingReport(true);
+        setGenerationProgress({ step: 'Analyzing conversation data...', progress: 25 });
+        
+        // Simulate progress updates for better UX
+        setTimeout(() => {
+          setGenerationProgress({ step: 'Processing medical information...', progress: 50 });
+        }, 2000);
+        
+        setTimeout(() => {
+          setGenerationProgress({ step: 'Generating comprehensive report...', progress: 75 });
+        }, 4000);
+        
+        // Check for report completion periodically
+        const checkReportCompletion = setInterval(async () => {
+          try {
+            const response = await fetch(`/api/ai-consultations/${consultationId}/diagnostic-report`);
+            if (response.ok) {
+              const reportData = await response.json();
+              if (reportData.report) {
+                console.log('✅ Automatic diagnostic report completed');
+                setGenerationProgress({ step: 'Report completed!', progress: 100 });
+                setGeneratedReport({
+                  id: reportData.report.id,
+                  downloadUrl: reportData.report.downloadUrl,
+                  viewUrl: reportData.report.viewUrl
+                });
+                setIsGeneratingReport(false);
+                clearInterval(checkReportCompletion);
+                
+                toast.success('Your comprehensive diagnostic report is ready!', {
+                  duration: 5000,
+                  action: {
+                    label: 'View Report',
+                    onClick: () => window.open(reportData.report.viewUrl, '_blank')
+                  }
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Error checking report completion:', error);
+          }
+        }, 3000);
+        
+        // Stop checking after 2 minutes
+        setTimeout(() => {
+          clearInterval(checkReportCompletion);
+          if (isGeneratingReport) {
+            setIsGeneratingReport(false);
+            setGenerationProgress(undefined);
+          }
+        }, 120000);
+        
+        return; // Skip normal diagnostic processing when auto-generation is triggered
+      }
+    }
+
+    // Process new messages for diagnostic information with timing checks
+    messages.forEach(message => {
+      if (message.senderType === 'user' || message.senderType === 'patient') {
+        const messageTime = new Date(message.createdAt);
+        const processingResult = conversationDataCollector.processMessage(
+          message.content, 
+          message.senderType, 
+          messageTime
+        );
+        
+        // Handle quick response confirmation
+        if (processingResult.shouldConfirm && !showQuickResponseDialog) {
+          const timingData = conversationDataCollector.getTimingData();
+          const lastResponseTime = timingData.userResponseTimes[timingData.userResponseTimes.length - 1] || 0;
+          
+          setPendingQuickMessage({
+            content: message.content,
+            responseTime: lastResponseTime
+          });
+          setShowQuickResponseDialog(true);
+          console.log('⚡ Quick response detected, showing confirmation dialog');
+          return; // Don't process further until user confirms
+        }
+        
+        // Show timeout message if conversation is too old
+        if (processingResult.reason && processingResult.reason.includes('30-minute time limit')) {
+          toast.info('Diagnostic data collection is disabled for conversations older than 30 minutes.', {
+            duration: 5000
+          });
+        }
+      }
+    });
+
+    // Only proceed with diagnostic detection if no quick response confirmation is pending and no auto-generation is active
+    if (!showQuickResponseDialog && !isGeneratingReport) {
+      // Notify detector about message processing
+      diagnosticDetectorRef.current.onMessageProcessed();
+
+      // Check if we should trigger diagnostic report generation
+      const triggerResult = diagnosticDetectorRef.current.shouldTriggerDiagnostic();
+      
+      if (triggerResult.shouldTrigger && !showDiagnosticDialog && !isGeneratingReport) {
+        console.log('🔬 Diagnostic trigger conditions met:', triggerResult);
+        setDiagnosticTriggerResult(triggerResult);
+        setShowDiagnosticDialog(true);
+      }
+    }
+  }, [messages, showDiagnosticDialog, isGeneratingReport, showQuickResponseDialog, consultationId]);
 
   // WebSocket-like real-time connection using Server-Sent Events with enhanced error handling
   useEffect(() => {
@@ -412,6 +578,33 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowScrollToBottom(false);
+  };
+
+  // Check if user is at bottom of chat
+  const checkIfAtBottom = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      const threshold = 100; // 100px threshold
+      const atBottom = scrollHeight - scrollTop - clientHeight < threshold;
+      setIsUserAtBottom(atBottom);
+      
+      if (atBottom) {
+        setShowScrollToBottom(false);
+      }
+    }
+  };
+
+  // Handle scroll events
+  const handleScroll = () => {
+    checkIfAtBottom();
+  };
+
+  const scrollToReferral = (messageId: string) => {
+    const referralElement = document.getElementById(`referral-${messageId}`);
+    if (referralElement) {
+      referralElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
   const { getToken } = useAuth();
@@ -746,6 +939,136 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     }
   };
 
+  const handleDiagnosticConfirmation = async () => {
+    if (!diagnosticTriggerResult || isGeneratingReport) {
+      return;
+    }
+
+    setIsGeneratingReport(true);
+    setGenerationProgress({ step: 'Preparing diagnostic data...', progress: 10 });
+
+    try {
+      console.log('🔬 Starting diagnostic report generation');
+      
+      // Validate collected data
+      const validation = diagnosticDetectorRef.current?.validateForDiagnosticRequest();
+      if (!validation?.isValid) {
+        throw new Error(`Invalid diagnostic data: ${validation?.errors.join(', ')}`);
+      }
+
+      // Convert collected data to FullDiagnosticRequest format
+      const diagnosticRequest = conversationDataCollector.toFullDiagnosticRequest();
+      
+      setGenerationProgress({ step: 'Analyzing symptoms with AI...', progress: 30 });
+      
+      const token = await getToken();
+      const response = await fetch('/api/ai/full-diagnostic', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(diagnosticRequest)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate diagnostic report: ${response.status}`);
+      }
+
+      const analysisData = await response.json();
+      
+      setGenerationProgress({ step: 'Saving report to your health records...', progress: 70 });
+      
+      // Save the report
+      const saveResponse = await fetch('/api/health-reports/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...analysisData,
+          source: 'conversation',
+          consultationId: consultation?.id
+        })
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save diagnostic report');
+      }
+
+      const savedReport = await saveResponse.json();
+      
+      setGenerationProgress({ step: 'Report generated successfully!', progress: 100 });
+      
+      // Set the generated report for display
+      setGeneratedReport({
+        id: savedReport.id,
+        downloadUrl: `/api/health-reports/${savedReport.id}/download`,
+        viewUrl: `/health-reports/${savedReport.id}`
+      });
+      
+      toast.success('Diagnostic report generated successfully!');
+      
+      // Reset the data collector for future use
+      conversationDataCollector.reset();
+      diagnosticDetectorRef.current?.reset();
+      
+    } catch (error: unknown) {
+      console.error('💥 Error generating diagnostic report:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate diagnostic report');
+      setShowDiagnosticDialog(false);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const handleDiagnosticDialogClose = () => {
+    if (!isGeneratingReport) {
+      setShowDiagnosticDialog(false);
+      setDiagnosticTriggerResult(null);
+      setGenerationProgress(undefined);
+      setGeneratedReport(undefined);
+    }
+  };
+
+  const handleQuickResponseConfirm = () => {
+    if (pendingQuickMessage) {
+      // Process the message after user confirmation
+      conversationDataCollector.processConfirmedMessage(pendingQuickMessage.content);
+      console.log('✅ Quick response confirmed and processed');
+      
+      // Check if diagnostic trigger conditions are now met
+      if (diagnosticDetectorRef.current) {
+        diagnosticDetectorRef.current.onMessageProcessed();
+        const triggerResult = diagnosticDetectorRef.current.shouldTriggerDiagnostic();
+        
+        if (triggerResult.shouldTrigger && !showDiagnosticDialog && !isGeneratingReport) {
+          console.log('🔬 Diagnostic trigger conditions met after confirmation:', triggerResult);
+          setDiagnosticTriggerResult(triggerResult);
+          setShowDiagnosticDialog(true);
+        }
+      }
+    }
+    
+    // Close the quick response dialog
+    setShowQuickResponseDialog(false);
+    setPendingQuickMessage(null);
+  };
+
+  const handleQuickResponseDecline = () => {
+    console.log('❌ Quick response declined, message not added to diagnostic data');
+    
+    // Close the quick response dialog without processing the message
+    setShowQuickResponseDialog(false);
+    setPendingQuickMessage(null);
+  };
+
+  const handleQuickResponseClose = () => {
+    // Same as decline - user chose not to add the message
+    handleQuickResponseDecline();
+  };
+
   const switchDoctor = async (newProviderId: string, reason: string) => {
     if (!consultation || switchingDoctor) {
       return;
@@ -972,7 +1295,11 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
             </CardHeader>
 
             {/* Messages */}
-            <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+            <CardContent 
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth relative"
+              onScroll={handleScroll}
+            >
               {messagesLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1012,9 +1339,9 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                       >
                         <p className="whitespace-pre-wrap">{message.content}</p>
                         
-                        {/* Referral Notification - Now shows info only, switching handled by header dropdown */}
+                        {/* Referral Notification with inline Switch Doctor button */}
                         {(message.senderType === 'ai_provider' || message.senderType === 'ai') && message.metadata?.referralNeeded && (
-                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div id={`referral-${message.id}`} className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="flex items-start gap-2">
                               <div className="flex-shrink-0">
                                 <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -1025,13 +1352,28 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                                 <h4 className="text-sm font-medium text-blue-900 mb-1">
                                   Specialist Referral Recommended
                                 </h4>
-                                <p className="text-sm text-blue-700">
+                                <p className="text-sm text-blue-700 mb-3">
                                   A {message.metadata.recommendedSpecialty} specialist is recommended for your case.
                                   {message.metadata.suggestedProviderName && (
                                     <span> Dr. {message.metadata.suggestedProviderName} is available to assist you.</span>
                                   )}
-                                  <span className="block mt-1 text-blue-600 font-medium">Use the "Switch Doctor" button above to change specialists.</span>
                                 </p>
+                                {message.metadata.suggestedProvider && (
+                                  <Button
+                                    onClick={() => switchDoctor(
+                                      message.metadata.suggestedProvider,
+                                      `Referral to ${message.metadata.recommendedSpecialty} specialist`
+                                    )}
+                                    disabled={switchingDoctor}
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                  >
+                                    {switchingDoctor ? (
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    ) : null}
+                                    Switch to Specialist
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1082,7 +1424,97 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                 </div>
               )}
               
+              {/* Automatic Diagnostic Report Generation Indicator */}
+              {isGeneratingReport && generationProgress && consultation?.aiProvider && (
+                <div className="flex items-start gap-3 justify-start">
+                  <div className="flex-shrink-0">
+                    <Image
+                      src={consultation.aiProvider.profileImageUrl || '/placeholder-doctor.jpg'}
+                      alt={consultation.aiProvider.name || 'AI Provider'}
+                      width={36}
+                      height={36}
+                      className="rounded-full object-cover"
+                    />
+                  </div>
+                  <div className="max-w-[70%]">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-900 rounded-lg px-4 py-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                        <span className="font-medium text-sm">Generating Diagnostic Report</span>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs text-blue-700">{generationProgress.step}</p>
+                        <div className="w-full bg-blue-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+                            style={{ width: `${generationProgress.progress}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-blue-600">{generationProgress.progress}% complete</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Report Generation Complete Indicator */}
+              {generatedReport && !isGeneratingReport && (
+                <div className="flex items-start gap-3 justify-start">
+                  <div className="flex-shrink-0">
+                    <Image
+                      src={consultation?.aiProvider?.profileImageUrl || '/placeholder-doctor.jpg'}
+                      alt={consultation?.aiProvider?.name || 'AI Provider'}
+                      width={36}
+                      height={36}
+                      className="rounded-full object-cover"
+                    />
+                  </div>
+                  <div className="max-w-[70%]">
+                    <div className="bg-green-50 border border-green-200 text-green-900 rounded-lg px-4 py-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <span className="font-medium text-sm">Diagnostic Report Ready!</span>
+                      </div>
+                      <p className="text-xs text-green-700 mb-3">
+                        Your comprehensive diagnostic report has been generated and is ready for review.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => window.open(generatedReport.viewUrl, '_blank')}
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          View Report
+                        </Button>
+                        <Button
+                          onClick={() => window.open(generatedReport.downloadUrl, '_blank')}
+                          size="sm"
+                          variant="outline"
+                          className="border-green-300 text-green-700 hover:bg-green-50 text-xs"
+                        >
+                          Download PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div ref={messagesEndRef} />
+              
+              {/* Scroll to Bottom Button */}
+              {showScrollToBottom && (
+                <div className="absolute bottom-4 right-4 z-10">
+                  <Button
+                    onClick={scrollToBottom}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-full p-2"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
 
             {/* Message Input */}
@@ -1118,6 +1550,31 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
           </Card>
         </div>
       </div>
+      
+      {/* Diagnostic Confirmation Dialog */}
+      {showDiagnosticDialog && diagnosticTriggerResult && (
+        <DiagnosticConfirmationDialog
+          isOpen={showDiagnosticDialog}
+          onClose={handleDiagnosticDialogClose}
+          onConfirm={handleDiagnosticConfirmation}
+          triggerResult={diagnosticTriggerResult}
+          isGenerating={isGeneratingReport}
+          generationProgress={generationProgress}
+          generatedReport={generatedReport}
+        />
+      )}
+      
+      {/* Quick Response Confirmation Dialog */}
+      {showQuickResponseDialog && pendingQuickMessage && (
+        <QuickResponseConfirmDialog
+          isOpen={showQuickResponseDialog}
+          onClose={handleQuickResponseClose}
+          onConfirm={handleQuickResponseConfirm}
+          onDecline={handleQuickResponseDecline}
+          message={pendingQuickMessage.content}
+          responseTime={pendingQuickMessage.responseTime}
+        />
+      )}
     </div>
   );
 }

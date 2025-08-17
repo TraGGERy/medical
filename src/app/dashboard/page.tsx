@@ -30,7 +30,7 @@ import MyAppointments from '@/components/telemedicine/MyAppointments';
 import ConsultationHistory from '@/components/dashboard/ConsultationHistory';
 import ActiveConsultationChat from '@/components/dashboard/ActiveConsultationChat';
 import StatCard from '@/components/ui/statcard';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';

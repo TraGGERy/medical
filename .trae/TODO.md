@@ -1,8 +1,9 @@
 # TODO:
 
-- [x] doctor_switch_1: Add state management for available doctors list in ActiveConsultationChat component (priority: High)
-- [x] doctor_switch_2: Create fetchAvailableDoctors function to get list of available providers (priority: High)
-- [x] doctor_switch_3: Add persistent doctor switch UI in chat header with dropdown/modal for available doctors (priority: High)
-- [x] doctor_switch_4: Update switchDoctor function to properly refresh consultation state and UI (priority: High)
-- [x] doctor_switch_5: Remove referral notification dependency for doctor switching (priority: Medium)
-- [x] doctor_switch_6: Test bidirectional doctor switching functionality (priority: Medium)
+- [x] ts_error_1: Fix 4 errors in automaticDiagnosticReportService.ts - consultationId property and duplicate isGenerating identifier (priority: High)
+- [x] ts_error_2: Fix 3 errors in ai-consultations/[id]/messages/route.ts (priority: High)
+- [x] ts_error_3: Fix 1 error in diagnosticCompletenessDetector.ts - missing geminiService module (priority: High)
+- [ ] ts_error_4: Fix Card import case sensitivity issues across 22 files (**IN PROGRESS**) (priority: High)
+- [ ] ts_error_5: Fix urgencyLevel type mismatch in automaticDiagnosticReportService.ts (priority: Medium)
+- [ ] ts_error_6: Fix boolean type issue in diagnosticCompletenessDetector.ts (priority: Medium)
+- [ ] ts_error_7: Run final TypeScript check to verify all errors are resolved (priority: Low)
