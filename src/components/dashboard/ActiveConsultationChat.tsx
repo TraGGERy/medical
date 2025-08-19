@@ -38,7 +38,7 @@ interface Message {
   senderType: 'patient' | 'ai' | 'ai_provider' | 'user' | 'system';
   content: string;
   messageType: 'text' | 'image' | 'file' | 'system';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -727,14 +727,14 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       });
       
       // Filter out any invalid messages to prevent undefined errors
-      const validMessages = (data.messages || []).filter((message: any) => 
+      const validMessages = (data.messages || []).filter((message: Message) => 
         message && 
         message.id && 
         message.senderType && 
         message.content !== undefined
       );
       
-      console.log('📋 Valid messages after filtering:', validMessages.map((msg: any) => ({
+      console.log('📋 Valid messages after filtering:', validMessages.map((msg: Message) => ({
         id: msg.id,
         senderType: msg.senderType,
         content: msg.content?.substring(0, 30) + '...',

@@ -105,10 +105,21 @@ export async function GET(request: NextRequest) {
           timezone: slot.timezone,
         });
         return acc;
-      }, {} as Record<number, any[]>);
+      }, {} as Record<number, {
+        id: string;
+        startTime: string;
+        endTime: string;
+        isAvailable: boolean;
+        timezone: string;
+      }[]>);
 
     // Note: This schema doesn't support specific date overrides
-    const specificDates: any[] = [];
+    const specificDates: {
+      date: string;
+      startTime: string;
+      endTime: string;
+      isAvailable: boolean;
+    }[] = [];
 
     return NextResponse.json({
       success: true,
@@ -218,7 +229,16 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function for bulk availability creation
-async function createBulkAvailability(body: any) {
+async function createBulkAvailability(body: {
+  providerId: string;
+  schedule: {
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    isActive: boolean;
+  }[];
+  timezone: string;
+}) {
   const validatedData = bulkAvailabilitySchema.parse(body);
 
   // Verify provider exists and is verified

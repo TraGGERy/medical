@@ -77,7 +77,10 @@ export async function GET(
     }
 
     // Note: providerSpecialties is a reference table, not linked to specific providers
-    const specialties: any[] = [];
+    const specialties: {
+      name: string;
+      category: string;
+    }[] = [];
 
     // Get appointment statistics
     const appointmentStats = await db

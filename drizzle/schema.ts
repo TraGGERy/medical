@@ -721,3 +721,157 @@ export const aiDoctorHandoffs = pgTable("ai_doctor_handoffs", {
 			name: "ai_doctor_handoffs_to_ai_provider_id_ai_providers_id_fk"
 		}).onDelete("cascade"),
 ]);
+
+// Daily Health Calendar & Check-in System Tables
+export const dailyCheckins = pgTable("daily_checkins", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	userId: text("user_id").notNull(),
+	checkinDate: timestamp("checkin_date", { mode: 'string' }).notNull(),
+	moodRating: integer("mood_rating"), // 1-10 scale
+	energyLevel: integer("energy_level"), // 1-10 scale
+	sleepQuality: integer("sleep_quality"), // 1-10 scale
+	sleepHours: numeric("sleep_hours", { precision: 3, scale: 1 }),
+	stressLevel: integer("stress_level"), // 1-10 scale
+	exerciseMinutes: integer("exercise_minutes"),
+	waterIntake: numeric("water_intake", { precision: 4, scale: 1 }), // in liters
+	notes: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "daily_checkins_user_id_users_id_fk"
+		}).onDelete("cascade"),
+	unique("daily_checkins_user_id_date_unique").on(table.userId, table.checkinDate),
+]);
+
+export const healthEvents = pgTable("health_events", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	userId: text("user_id").notNull(),
+	eventType: text("event_type").notNull(), // symptom, medication, appointment, exercise, meal
+	title: text().notNull(),
+	description: text(),
+	severity: integer(), // 1-10 scale for symptoms
+	startDate: timestamp("start_date", { mode: 'string' }).notNull(),
+	endDate: timestamp("end_date", { mode: 'string' }),
+	isOngoing: boolean("is_ongoing").default(false),
+	frequency: text(), // daily, weekly, as-needed, etc.
+	dosage: text(), // for medications
+	unit: text(), // mg, ml, etc.
+	tags: jsonb(),
+	metadata: jsonb(), // additional event-specific data
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "health_events_user_id_users_id_fk"
+		}).onDelete("cascade"),
+]);
+
+export const checkinSymptoms = pgTable("checkin_symptoms", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	checkinId: uuid("checkin_id").notNull(),
+	symptomName: text("symptom_name").notNull(),
+	severity: integer().notNull(), // 1-10 scale
+	notes: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.checkinId],
+			foreignColumns: [dailyCheckins.id],
+			name: "checkin_symptoms_checkin_id_daily_checkins_id_fk"
+		}).onDelete("cascade"),
+]);
+
+export const checkinMedications = pgTable("checkin_medications", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	checkinId: uuid("checkin_id").notNull(),
+	medicationName: text("medication_name").notNull(),
+	dosage: text().notNull(),
+	taken: boolean().default(false),
+	timesTaken: integer("times_taken").default(0),
+	timesScheduled: integer("times_scheduled").default(1),
+	notes: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.checkinId],
+			foreignColumns: [dailyCheckins.id],
+			name: "checkin_medications_checkin_id_daily_checkins_id_fk"
+		}).onDelete("cascade"),
+]);
+
+export const healthNotifications = pgTable("health_notifications", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	userId: text("user_id").notNull(),
+	notificationType: text("notification_type").notNull(), // persistent_symptom, medication_reminder, streak_milestone
+	title: text().notNull(),
+	message: text().notNull(),
+	relatedEventId: uuid("related_event_id"),
+	triggerCondition: jsonb("trigger_condition"), // conditions that triggered this notification
+	status: text().default('pending'), // pending, sent, failed
+	scheduledAt: timestamp("scheduled_at", { mode: 'string' }),
+	sentAt: timestamp("sent_at", { mode: 'string' }),
+	emailSent: boolean("email_sent").default(false),
+	pushSent: boolean("push_sent").default(false),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "health_notifications_user_id_users_id_fk"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.relatedEventId],
+			foreignColumns: [healthEvents.id],
+			name: "health_notifications_related_event_id_health_events_id_fk"
+		}),
+]);
+
+export const streakRecords = pgTable("streak_records", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	userId: text("user_id").notNull(),
+	streakType: text("streak_type").notNull(), // daily_checkin, medication_adherence, exercise
+	currentStreak: integer("current_streak").default(0),
+	longestStreak: integer("longest_streak").default(0),
+	lastActivityDate: timestamp("last_activity_date", { mode: 'string' }),
+	streakStartDate: timestamp("streak_start_date", { mode: 'string' }),
+	totalActivities: integer("total_activities").default(0),
+	milestones: jsonb(), // achieved milestones
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "streak_records_user_id_users_id_fk"
+		}).onDelete("cascade"),
+	unique("streak_records_user_id_type_unique").on(table.userId, table.streakType),
+]);
+
+export const healthPatterns = pgTable("health_patterns", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	userId: text("user_id").notNull(),
+	patternType: text("pattern_type").notNull(), // correlation, trend, anomaly
+	title: text().notNull(),
+	description: text().notNull(),
+	confidenceScore: numeric("confidence_score", { precision: 3, scale: 2 }),
+	dataPoints: jsonb("data_points"), // supporting data for the pattern
+	correlations: jsonb(), // related health metrics
+	insights: jsonb(), // AI-generated insights
+	recommendations: jsonb(), // suggested actions
+	periodStart: timestamp("period_start", { mode: 'string' }).notNull(),
+	periodEnd: timestamp("period_end", { mode: 'string' }).notNull(),
+	isActive: boolean("is_active").default(true),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "health_patterns_user_id_users_id_fk"
+		}).onDelete("cascade"),
+]);

@@ -86,10 +86,10 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(telemedicineAppointments.providerId, providerId));
     }
     if (status) {
-      conditions.push(eq(telemedicineAppointments.status, status as any));
+      conditions.push(eq(telemedicineAppointments.status, status));
     }
     if (appointmentType) {
-      conditions.push(eq(telemedicineAppointments.appointmentType, appointmentType as any));
+      conditions.push(eq(telemedicineAppointments.appointmentType, appointmentType));
     }
     if (startDate && endDate) {
       conditions.push(
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
+      query = query.where(and(...conditions));
     }
 
     const appointments = await query

@@ -11,6 +11,16 @@ interface RouteParams {
   id: string;
 }
 
+interface ReferralMetadata {
+  referralNeeded?: boolean;
+  recommendedSpecialty?: string;
+  originalProvider?: string;
+  suggestedProvider?: string;
+  suggestedProviderName?: string;
+  suggestedProviderSpecialty?: string;
+  referralReason?: string;
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -245,7 +255,7 @@ async function generateAIResponseAsync(
 
     // Check if AI response contains a referral trigger
     const referralMatch = aiResponse.message.match(/\[REFERRAL_NEEDED: ([^\]]+)\]/);
-    let referralMetadata = {};
+    let referralMetadata: ReferralMetadata = {};
     
     // Also check for mental health keywords that should trigger psychiatry referral
     const mentalHealthKeywords = [
@@ -271,9 +281,9 @@ async function generateAIResponseAsync(
       // Try to find an available specialist
       const availableSpecialist = await findAvailableSpecialist(recommendedSpecialty);
       if (availableSpecialist) {
-        (referralMetadata as any).suggestedProvider = availableSpecialist.id;
-        (referralMetadata as any).suggestedProviderName = availableSpecialist.name;
-        (referralMetadata as any).suggestedProviderSpecialty = availableSpecialist.specialty;
+        referralMetadata.suggestedProvider = availableSpecialist.id;
+        referralMetadata.suggestedProviderName = availableSpecialist.name;
+        referralMetadata.suggestedProviderSpecialty = availableSpecialist.specialty;
       }
     } else if (containsMentalHealthContent && aiProvider?.specialty !== 'Psychiatry') {
       // Auto-trigger psychiatry referral for mental health content if not already with a psychiatrist
