@@ -18,7 +18,6 @@ import HealthCheckHistory from '@/components/dashboard/HealthCheckHistory';
 import NewDiagnostic from '@/components/dashboard/NewDiagnostic';
 import ReportViewer from '@/components/dashboard/ReportViewer';
 import ProfileSettings from '@/components/dashboard/ProfileSettings';
-
 import PrivacySettings from '@/components/dashboard/PrivacySettings';
 import SubscriptionStatus from '@/components/dashboard/SubscriptionStatus';
 import RealtimeDashboard from '@/components/RealtimeDashboard';
@@ -26,9 +25,9 @@ import DeviceManagement from '@/components/devices/DeviceManagement';
 import TelemedicineOverview from '@/components/telemedicine/TelemedicineOverview';
 import AppointmentBooking from '@/components/telemedicine/AppointmentBooking';
 import MyAppointments from '@/components/telemedicine/MyAppointments';
-
 import ConsultationHistory from '@/components/dashboard/ConsultationHistory';
 import ActiveConsultationChat from '@/components/dashboard/ActiveConsultationChat';
+import HealthCalendarDashboard from '@/components/health-calendar/HealthCalendarDashboard';
 import StatCard from '@/components/ui/statcard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/button';
@@ -175,6 +174,8 @@ export default function Dashboard() {
         );
       case 'new-diagnostic':
         return <NewDiagnostic onComplete={() => setActiveTab('history')} />;
+      case 'health-calendar':
+        return <HealthCalendarDashboard />;
       case 'telemedicine-overview':
         if (showBookingForm) {
           return (

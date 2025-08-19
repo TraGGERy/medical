@@ -23,7 +23,9 @@ import {
   Calendar,
   Clock,
   Stethoscope,
-  MessageSquare
+  MessageSquare,
+  MessageCircle,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,15 +56,16 @@ export default function DashboardLayout({ children, activeTab, onTabChange, acti
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: Home },
     { id: 'new-diagnostic', label: 'New Check', icon: Plus },
-    { id: 'active-chat', label: 'Active Chat', icon: MessageSquare },
+    { id: 'health-calendar', label: 'Health Calendar', icon: Calendar },
+    { id: 'active-chat', label: 'Active Chat', icon: MessageCircle },
     { id: 'telemedicine-overview', label: 'Telemedicine', icon: Video },
     { id: 'my-appointments', label: 'My Appointments', icon: Clock },
     { id: 'realtime-monitoring', label: 'Real-time Monitoring', icon: Activity },
     { id: 'device-management', label: 'Device Management', icon: Smartphone },
-    { id: 'history', label: 'Health Reports', icon: History },
-    { id: 'consultation-history', label: 'AI Consultations', icon: Bot },
+    { id: 'report-viewer', label: 'Health Reports', icon: FileText },
+    { id: 'ai-consultations', label: 'AI Consultations', icon: Bot },
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'privacy', label: 'Privacy', icon: Shield }
+    { id: 'privacy', label: 'Privacy', icon: Shield },
   ];
 
   const handleTabChange = (tabId: string) => {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { streakRecords, dailyCheckins, healthNotifications } from '@/drizzle/schema';
+import { streakRecords, dailyCheckins, healthNotifications } from '@/lib/db/schema';
 import { eq, and, desc, gte, sql, max } from 'drizzle-orm';
 import { z } from 'zod';
 

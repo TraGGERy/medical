@@ -1,6 +1,6 @@
 import { emailNotificationService } from './email-service';
 import { db } from '@/lib/db';
-import { healthNotifications } from '@/drizzle/schema';
+import { healthNotifications } from '@/lib/db/schema';
 import { eq, and, lte } from 'drizzle-orm';
 import { subHours, subDays } from 'date-fns';
 

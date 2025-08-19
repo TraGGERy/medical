@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { db } from '@/lib/db';
-import { healthEvents, healthNotifications, users } from '@/drizzle/schema';
+import { healthEvents, healthNotifications, users } from '@/lib/db/schema';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 
