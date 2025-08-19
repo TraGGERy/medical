@@ -29,7 +29,7 @@ import ConsultationHistory from '@/components/dashboard/ConsultationHistory';
 import ActiveConsultationChat from '@/components/dashboard/ActiveConsultationChat';
 import HealthCalendarDashboard from '@/components/health-calendar/HealthCalendarDashboard';
 import StatCard from '@/components/ui/statcard';
-import { Card } from '@/components/ui/Card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';

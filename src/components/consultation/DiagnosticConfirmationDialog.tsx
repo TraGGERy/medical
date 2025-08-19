@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Clock, AlertCircle, FileText, Download } from 'lucide-react';
 import { DiagnosticTriggerResult } from '@/lib/services/diagnosticCompletenessDetector';
 

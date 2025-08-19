@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
 import { parse } from 'url';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import jwt from 'jsonwebtoken';
 
 // WebSocket server instance
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
     const { action, userId, eventType, data } = body;
 
     // Verify authentication
-    const { userId: authUserId } = auth();
+    const { userId: authUserId } = await auth();
     if (!authUserId) {
       return Response.json(
         { success: false, error: 'Unauthorized' },

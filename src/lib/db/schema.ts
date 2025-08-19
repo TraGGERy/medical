@@ -553,6 +553,134 @@ export const selectConsultationMessageSchema = createSelectSchema(consultationMe
 export const insertProviderHandoffSchema = createInsertSchema(providerHandoffs);
 export const selectProviderHandoffSchema = createSelectSchema(providerHandoffs);
 
+// Health Calendar Tables (imported from drizzle schema)
+export const dailyCheckins = pgTable('daily_checkins', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  checkinDate: timestamp('checkin_date').notNull(),
+  moodRating: integer('mood_rating'), // 1-10 scale
+  energyLevel: integer('energy_level'), // 1-10 scale
+  sleepQuality: integer('sleep_quality'), // 1-10 scale
+  sleepHours: decimal('sleep_hours', { precision: 3, scale: 1 }),
+  stressLevel: integer('stress_level'), // 1-10 scale
+  exerciseMinutes: integer('exercise_minutes'),
+  waterIntake: decimal('water_intake', { precision: 4, scale: 1 }), // in liters
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const healthEvents = pgTable('health_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  eventType: text('event_type').notNull(), // symptom, medication, appointment, exercise, meal
+  title: text('title').notNull(),
+  description: text('description'),
+  severity: integer('severity'), // 1-10 scale for symptoms
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date'),
+  isOngoing: boolean('is_ongoing').default(false),
+  frequency: text('frequency'), // daily, weekly, as-needed, etc.
+  dosage: text('dosage'), // for medications
+  unit: text('unit'), // mg, ml, etc.
+  tags: jsonb('tags'),
+  metadata: jsonb('metadata'), // additional event-specific data
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const checkinSymptoms = pgTable('checkin_symptoms', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  checkinId: uuid('checkin_id').references(() => dailyCheckins.id, { onDelete: 'cascade' }).notNull(),
+  symptomName: text('symptom_name').notNull(),
+  severity: integer('severity').notNull(), // 1-10 scale
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const checkinMedications = pgTable('checkin_medications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  checkinId: uuid('checkin_id').references(() => dailyCheckins.id, { onDelete: 'cascade' }).notNull(),
+  medicationName: text('medication_name').notNull(),
+  dosage: text('dosage').notNull(),
+  taken: boolean('taken').default(false),
+  timesTaken: integer('times_taken').default(0),
+  timesScheduled: integer('times_scheduled').default(1),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const healthNotifications = pgTable('health_notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  notificationType: text('notification_type').notNull(), // persistent_symptom, medication_reminder, streak_milestone
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  relatedEventId: uuid('related_event_id').references(() => healthEvents.id),
+  triggerCondition: jsonb('trigger_condition'), // conditions that triggered this notification
+  status: text('status').default('pending'), // pending, sent, failed
+  scheduledAt: timestamp('scheduled_at'),
+  sentAt: timestamp('sent_at'),
+  emailSent: boolean('email_sent').default(false),
+  pushSent: boolean('push_sent').default(false),
+  priority: text('priority').default('medium'), // low, medium, high, urgent
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const streakRecords = pgTable('streak_records', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  streakType: text('streak_type').notNull(), // daily_checkin, medication_adherence, exercise
+  currentStreak: integer('current_streak').default(0),
+  longestStreak: integer('longest_streak').default(0),
+  lastActivityDate: timestamp('last_activity_date'),
+  streakStartDate: timestamp('streak_start_date'),
+  totalActivities: integer('total_activities').default(0),
+  milestones: jsonb('milestones'), // achieved milestones
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const healthPatterns = pgTable('health_patterns', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  patternType: text('pattern_type').notNull(), // correlation, trend, anomaly
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  confidenceScore: decimal('confidence_score', { precision: 3, scale: 2 }),
+  dataPoints: jsonb('data_points'), // supporting data for the pattern
+  correlations: jsonb('correlations'), // related health metrics
+  insights: jsonb('insights'), // AI-generated insights
+  recommendations: jsonb('recommendations'), // suggested actions
+  periodStart: timestamp('period_start').notNull(),
+  periodEnd: timestamp('period_end').notNull(),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Zod schemas for health calendar tables
+export const insertDailyCheckinSchema = createInsertSchema(dailyCheckins);
+export const selectDailyCheckinSchema = createSelectSchema(dailyCheckins);
+
+export const insertHealthEventSchema = createInsertSchema(healthEvents);
+export const selectHealthEventSchema = createSelectSchema(healthEvents);
+
+export const insertCheckinSymptomSchema = createInsertSchema(checkinSymptoms);
+export const selectCheckinSymptomSchema = createSelectSchema(checkinSymptoms);
+
+export const insertCheckinMedicationSchema = createInsertSchema(checkinMedications);
+export const selectCheckinMedicationSchema = createSelectSchema(checkinMedications);
+
+export const insertHealthNotificationSchema = createInsertSchema(healthNotifications);
+export const selectHealthNotificationSchema = createSelectSchema(healthNotifications);
+
+export const insertStreakRecordSchema = createInsertSchema(streakRecords);
+export const selectStreakRecordSchema = createSelectSchema(streakRecords);
+
+export const insertHealthPatternSchema = createInsertSchema(healthPatterns);
+export const selectHealthPatternSchema = createSelectSchema(healthPatterns);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
