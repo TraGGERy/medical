@@ -92,11 +92,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate) {
-      whereConditions.push(gte(healthNotifications.scheduledAt, startDate));
+      whereConditions.push(gte(healthNotifications.scheduledAt, new Date(startDate).toISOString()));
     }
 
     if (endDate) {
-      whereConditions.push(lte(healthNotifications.scheduledAt, endDate));
+      whereConditions.push(lte(healthNotifications.scheduledAt, new Date(endDate).toISOString()));
     }
 
     const notifications = await db
@@ -261,7 +261,7 @@ export async function PATCH(request: NextRequest) {
           subject: notification.title,
           message: notification.message,
           notificationType: notification.notificationType,
-          priority: notification.priority
+          priority: notification.priority || 'medium'
         });
 
         // Update notification status
@@ -277,7 +277,7 @@ export async function PATCH(request: NextRequest) {
         results.push({
           id: notification.id,
           status: 'sent',
-          emailId: emailResult.id
+          emailId: emailResult.data?.id || 'unknown'
         });
       } catch (error) {
         console.error(`Error sending notification ${notification.id}:`, error);
@@ -342,7 +342,7 @@ async function sendEmailNotification({
   subject: string;
   message: string;
   notificationType: string;
-  priority: string;
+  priority: string | null;
 }) {
   const emailTemplate = getEmailTemplate(notificationType, message, priority);
   
@@ -357,12 +357,12 @@ async function sendEmailNotification({
 }
 
 // Helper function to generate email templates
-function getEmailTemplate(notificationType: string, message: string, priority: string): string {
+function getEmailTemplate(notificationType: string, message: string, priority: string | null): string {
   const priorityColor = {
     low: '#10B981',
     medium: '#F59E0B',
     high: '#EF4444'
-  }[priority] || '#6B7280';
+  }[priority || 'medium'] || '#6B7280';
 
   const iconMap = {
     persistent_symptom: '⚠️',
@@ -391,7 +391,7 @@ function getEmailTemplate(notificationType: string, message: string, priority: s
       <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; border-left: 4px solid ${priorityColor}; margin-bottom: 25px;">
         <div style="display: flex; align-items: center; margin-bottom: 15px;">
           <span style="font-size: 24px; margin-right: 10px;">${icon}</span>
-          <span style="background: ${priorityColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase;">${priority} Priority</span>
+          <span style="background: ${priorityColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase;">${priority || 'medium'} Priority</span>
         </div>
         <p style="font-size: 16px; margin: 0; line-height: 1.5;">${message}</p>
       </div>

@@ -1,15 +1,489 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
+// Inline UI Components
+const Card = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+  <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`} {...props}>
+    {children}
+  </div>
+)
+
+const CardHeader = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+  <div className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props}>
+    {children}
+  </div>
+)
+
+const CardTitle = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+  <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`} {...props}>
+    {children}
+  </h3>
+)
+
+const CardContent = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+  <div className={`p-6 pt-0 ${className}`} {...props}>
+    {children}
+  </div>
+)
+
+const CardDescription = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+  <p className={`text-sm text-muted-foreground ${className}`} {...props}>
+    {children}
+  </p>
+)
+
+const Button = ({ children, className = '', variant = 'default', size = 'default', disabled = false, onClick, type = 'button', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  disabled?: boolean;
+  onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
+  [key: string]: any;
+}) => {
+  const baseClasses = 'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50'
+  const variantClasses = {
+    default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+    destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+    outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+    ghost: 'hover:bg-accent hover:text-accent-foreground',
+    link: 'text-primary underline-offset-4 hover:underline'
+  }
+  const sizeClasses = {
+    default: 'h-10 px-4 py-2',
+    sm: 'h-9 rounded-md px-3',
+    lg: 'h-11 rounded-md px-8',
+    icon: 'h-10 w-10'
+  }
+  return (
+    <button
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      disabled={disabled}
+      onClick={onClick}
+      type={type}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+const Input = ({ className = '', type = 'text', ...props }: {
+  className?: string;
+  type?: string;
+  [key: string]: any;
+}) => (
+  <input
+    type={type}
+    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    {...props}
+  />
+)
+
+const Badge = ({ children, className = '', variant = 'default', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  variant?: 'default' | 'secondary' | 'destructive' | 'outline';
+  [key: string]: any;
+}) => {
+  const variantClasses = {
+    default: 'bg-primary text-primary-foreground hover:bg-primary/80',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+    destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/80',
+    outline: 'text-foreground'
+  }
+  return (
+    <div className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantClasses[variant]} ${className}`} {...props}>
+      {children}
+    </div>
+  )
+}
+
+const Textarea = ({ className = '', ...props }: {
+  className?: string;
+  [key: string]: any;
+}) => (
+  <textarea
+    className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    {...props}
+  />
+)
+
+const Label = ({ children, className = '', htmlFor, ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  htmlFor?: string;
+  [key: string]: any;
+}) => (
+  <label
+    htmlFor={htmlFor}
+    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
+    {...props}
+  >
+    {children}
+  </label>
+)
+
+const Select = ({ children, value, onValueChange, ...props }: {
+  children: React.ReactNode;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  [key: string]: any;
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [selectedValue, setSelectedValue] = useState(value || '')
+  
+  const handleValueChange = (newValue: string) => {
+    setSelectedValue(newValue)
+    onValueChange?.(newValue)
+    setIsOpen(false)
+  }
+  
+  return (
+    <div className="relative" {...props}>
+      {React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            isOpen,
+            setIsOpen,
+            selectedValue,
+            onValueChange: handleValueChange
+          } as any)
+        }
+        return child
+      })}
+    </div>
+  )
+}
+
+const SelectTrigger = ({ children, className = '', isOpen, setIsOpen, ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
+  [key: string]: any;
+}) => (
+  <button
+    type="button"
+    className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    onClick={() => setIsOpen?.(!isOpen)}
+    {...props}
+  >
+    {children}
+  </button>
+)
+
+const SelectValue = ({ placeholder = '', selectedValue, ...props }: {
+  placeholder?: string;
+  selectedValue?: string;
+  [key: string]: any;
+}) => (
+  <span {...props}>
+    {selectedValue || placeholder}
+  </span>
+)
+
+const SelectContent = ({ children, isOpen, ...props }: {
+  children: React.ReactNode;
+  isOpen?: boolean;
+  [key: string]: any;
+}) => {
+  if (!isOpen) return null
+  
+  return (
+    <div className="absolute top-full left-0 z-50 w-full mt-1 bg-popover text-popover-foreground rounded-md border shadow-md" {...props}>
+      <div className="p-1">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+const SelectItem = ({ children, value, onValueChange, className = '', ...props }: {
+  children: React.ReactNode;
+  value: string;
+  onValueChange?: (value: string) => void;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <div
+    className={`relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${className}`}
+    onClick={() => onValueChange?.(value)}
+    {...props}
+  >
+    {children}
+  </div>
+)
+
+const Switch = ({ checked, onCheckedChange, className = '', ...props }: {
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    className={`peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${checked ? 'bg-primary' : 'bg-input'} ${className}`}
+    onClick={() => onCheckedChange?.(!checked)}
+    {...props}
+  >
+    <span className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+  </button>
+)
+
+const Separator = ({ className = '', orientation = 'horizontal', ...props }: {
+  className?: string;
+  orientation?: 'horizontal' | 'vertical';
+  [key: string]: any;
+}) => (
+  <div
+    className={`shrink-0 bg-border ${orientation === 'horizontal' ? 'h-[1px] w-full' : 'h-full w-[1px]'} ${className}`}
+    {...props}
+  />
+)
+
+const Dialog = ({ children, open, onOpenChange, ...props }: {
+  children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  [key: string]: any;
+}) => {
+  const [isOpen, setIsOpen] = useState(open || false)
+  
+  const handleOpenChange = (newOpen: boolean) => {
+    setIsOpen(newOpen)
+    onOpenChange?.(newOpen)
+  }
+  
+  return (
+    <div {...props}>
+      {React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            isOpen,
+            onOpenChange: handleOpenChange
+          } as any)
+        }
+        return child
+      })}
+    </div>
+  )
+}
+
+const DialogTrigger = ({ children, isOpen, onOpenChange, ...props }: {
+  children: React.ReactNode;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  [key: string]: any;
+}) => (
+  <div onClick={() => onOpenChange?.(!isOpen)} {...props}>
+    {children}
+  </div>
+)
+
+const DialogContent = ({ children, isOpen, onOpenChange, className = '', ...props }: {
+  children: React.ReactNode;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  className?: string;
+  [key: string]: any;
+}) => {
+  if (!isOpen) return null
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" onClick={() => onOpenChange?.(false)} />
+      <div className={`relative z-50 grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg ${className}`} {...props}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+const DialogHeader = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <div className={`flex flex-col space-y-1.5 text-center sm:text-left ${className}`} {...props}>
+    {children}
+  </div>
+)
+
+const DialogTitle = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <h2 className={`text-lg font-semibold leading-none tracking-tight ${className}`} {...props}>
+    {children}
+  </h2>
+)
+
+const DialogDescription = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <p className={`text-sm text-muted-foreground ${className}`} {...props}>
+    {children}
+  </p>
+)
+
+const DialogFooter = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <div className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 ${className}`} {...props}>
+    {children}
+  </div>
+)
+
+const Table = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <div className="relative w-full overflow-auto">
+    <table className={`w-full caption-bottom text-sm ${className}`} {...props}>
+      {children}
+    </table>
+  </div>
+)
+
+const TableHeader = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <thead className={`[&_tr]:border-b ${className}`} {...props}>
+    {children}
+  </thead>
+)
+
+const TableBody = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <tbody className={`[&_tr:last-child]:border-0 ${className}`} {...props}>
+    {children}
+  </tbody>
+)
+
+const TableRow = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <tr className={`border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted ${className}`} {...props}>
+    {children}
+  </tr>
+)
+
+const TableHead = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <th className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 ${className}`} {...props}>
+    {children}
+  </th>
+)
+
+const TableCell = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <td className={`p-4 align-middle [&:has([role=checkbox])]:pr-0 ${className}`} {...props}>
+    {children}
+  </td>
+)
+
+const DropdownMenu = ({ children, ...props }: {
+  children: React.ReactNode;
+  [key: string]: any;
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  return (
+    <div className="relative" {...props}>
+      {React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            isOpen,
+            setIsOpen
+          } as any)
+        }
+        return child
+      })}
+    </div>
+  )
+}
+
+const DropdownMenuTrigger = ({ children, isOpen, setIsOpen, ...props }: {
+  children: React.ReactNode;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
+  [key: string]: any;
+}) => (
+  <div onClick={() => setIsOpen?.(!isOpen)} {...props}>
+    {children}
+  </div>
+)
+
+const DropdownMenuContent = ({ children, isOpen, className = '', ...props }: {
+  children: React.ReactNode;
+  isOpen?: boolean;
+  className?: string;
+  [key: string]: any;
+}) => {
+  if (!isOpen) return null
+  
+  return (
+    <div className={`absolute right-0 top-full z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md ${className}`} {...props}>
+      {children}
+    </div>
+  )
+}
+
+const DropdownMenuLabel = ({ children, className = '', ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: any;
+}) => (
+  <div className={`px-2 py-1.5 text-sm font-semibold ${className}`} {...props}>
+    {children}
+  </div>
+)
+
+const DropdownMenuItem = ({ children, className = '', onClick, ...props }: {
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  [key: string]: any;
+}) => (
+  <div
+    className={`relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${className}`}
+    onClick={onClick}
+    {...props}
+  >
+    {children}
+  </div>
+)
+
+const DropdownMenuSeparator = ({ className = '', ...props }: {
+  className?: string;
+  [key: string]: any;
+}) => (
+  <div className={`-mx-1 my-1 h-px bg-muted ${className}`} {...props} />
+)
 import { 
   Plus, 
   Search, 

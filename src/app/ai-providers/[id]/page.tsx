@@ -2,14 +2,253 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+// Inline UI Components
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const Card = ({ children, className = '' }: CardProps) => (
+  <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`}>
+    {children}
+  </div>
+);
+
+const CardHeader = ({ children, className = '' }: CardProps) => (
+  <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>
+    {children}
+  </div>
+);
+
+const CardTitle = ({ children, className = '' }: CardProps) => (
+  <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`}>
+    {children}
+  </h3>
+);
+
+const CardDescription = ({ children, className = '' }: CardProps) => (
+  <p className={`text-sm text-muted-foreground ${className}`}>
+    {children}
+  </p>
+);
+
+const CardContent = ({ children, className = '' }: CardProps) => (
+  <div className={`p-6 pt-0 ${className}`}>
+    {children}
+  </div>
+);
+
+interface ButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  variant?: 'default' | 'outline' | 'ghost';
+  size?: 'default' | 'sm' | 'lg';
+  className?: string;
+}
+
+const Button = ({ children, onClick, disabled = false, variant = 'default', size = 'default', className = '' }: ButtonProps) => {
+  const baseClasses = 'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+  const variantClasses = {
+    default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+    outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+    ghost: 'hover:bg-accent hover:text-accent-foreground'
+  };
+  const sizeClasses = {
+    default: 'h-10 px-4 py-2',
+    sm: 'h-9 rounded-md px-3',
+    lg: 'h-11 rounded-md px-8'
+  };
+  
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+    >
+      {children}
+    </button>
+  );
+};
+
+interface BadgeProps {
+  children: React.ReactNode;
+  variant?: 'default' | 'secondary' | 'destructive' | 'outline';
+  className?: string;
+}
+
+const Badge = ({ children, variant = 'default', className = '' }: BadgeProps) => {
+  const variantClasses = {
+    default: 'bg-primary text-primary-foreground hover:bg-primary/80',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+    destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/80',
+    outline: 'text-foreground border border-input'
+  };
+  
+  return (
+    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantClasses[variant]} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+interface TextareaProps {
+  id?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+}
+
+const Textarea = ({ id, value, onChange, placeholder, className = '', disabled = false }: TextareaProps) => (
+  <textarea
+    id={id}
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    disabled={disabled}
+    className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+  />
+);
+
+interface InputProps {
+  id?: string;
+  type?: string;
+  value: string | number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+}
+
+const Input = ({ id, type = 'text', value, onChange, placeholder, className = '', disabled = false }: InputProps) => (
+  <input
+    id={id}
+    type={type}
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    disabled={disabled}
+    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+  />
+);
+
+interface LabelProps {
+  htmlFor?: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const Label = ({ htmlFor, children, className = '' }: LabelProps) => (
+  <label
+    htmlFor={htmlFor}
+    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
+  >
+    {children}
+  </label>
+);
+
+interface SelectProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  children: React.ReactNode;
+}
+
+const Select = ({ value, onValueChange, children }: SelectProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  return (
+    <div className="relative">
+      {React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child as React.ReactElement<any>, {
+            value,
+            onValueChange,
+            isOpen,
+            setIsOpen
+          });
+        }
+        return child;
+      })}
+    </div>
+  );
+};
+
+interface SelectTriggerProps {
+  children: React.ReactNode;
+  className?: string;
+  value?: string;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
+}
+
+const SelectTrigger = ({ children, className = '', value, isOpen, setIsOpen }: SelectTriggerProps) => (
+  <button
+    type="button"
+    onClick={() => setIsOpen?.(!isOpen)}
+    className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+  >
+    {children}
+    <svg className="h-4 w-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+);
+
+const SelectValue = ({ placeholder }: { placeholder?: string }) => (
+  <span className="text-muted-foreground">{placeholder}</span>
+);
+
+interface SelectContentProps {
+  children: React.ReactNode;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
+  onValueChange?: (value: string) => void;
+}
+
+const SelectContent = ({ children, isOpen, setIsOpen, onValueChange }: SelectContentProps) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="absolute top-full left-0 z-50 w-full mt-1 bg-popover border rounded-md shadow-md">
+      <div className="p-1">
+        {React.Children.map(children, child => {
+          if (React.isValidElement(child)) {
+            return React.cloneElement(child as React.ReactElement<any>, {
+              onValueChange,
+              setIsOpen
+            });
+          }
+          return child;
+        })}
+      </div>
+    </div>
+  );
+};
+
+interface SelectItemProps {
+  value: string;
+  children: React.ReactNode;
+  onValueChange?: (value: string) => void;
+  setIsOpen?: (open: boolean) => void;
+}
+
+const SelectItem = ({ value, children, onValueChange, setIsOpen }: SelectItemProps) => (
+  <div
+    onClick={() => {
+      onValueChange?.(value);
+      setIsOpen?.(false);
+    }}
+    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground cursor-pointer"
+  >
+    {children}
+  </div>
+);
+
+const Separator = ({ className = '' }: { className?: string }) => (
+  <div className={`shrink-0 bg-border h-[1px] w-full ${className}`} />
+);
 import { 
   Star, 
   Clock, 

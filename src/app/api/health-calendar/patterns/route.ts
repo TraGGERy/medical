@@ -19,8 +19,8 @@ type HealthEvent = {
   frequency: string | null;
   dosage: string | null;
   unit: string | null;
-  tags: string;
-  metadata: string;
+  tags: any;
+  metadata: any;
   createdAt: string;
   updatedAt: string;
 };
@@ -29,14 +29,14 @@ type DailyCheckin = {
   id: string;
   userId: string;
   checkinDate: string;
-  mood: number | null;
-  energy: number | null;
+  moodRating: number | null;
+  energyLevel: number | null;
   sleepQuality: number | null;
   sleepHours: number | null;
   stressLevel: number | null;
+  exerciseMinutes: number | null;
+  waterIntake: number | null;
   notes: string | null;
-  symptoms: string;
-  medications: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -76,7 +76,7 @@ const createPatternSchema = z.object({
   patternType: z.enum(['correlation', 'trend', 'frequency', 'seasonal']),
   title: z.string().min(1),
   description: z.string(),
-  confidence: z.number().min(0).max(1),
+  confidenceScore: z.number().min(0).max(1),
   timeframe: z.string(),
   dataPoints: z.array(z.record(z.any())),
   insights: z.array(z.string()),
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     const startDate = new Date(Date.now() - timeframeDays * 24 * 60 * 60 * 1000).toISOString();
 
     // Fetch health events
-    let eventConditions = [eq(healthEvents.userId, userId), gte(healthEvents.startDate, startDate)];
+    let eventConditions = [eq(healthEvents.userId, userId), gte(healthEvents.startDate, new Date(startDate).toISOString())];
     if (validatedData.eventTypes && validatedData.eventTypes.length > 0) {
       eventConditions.push(sql`${healthEvents.eventType} = ANY(${validatedData.eventTypes})`);
     }
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         .where(
           and(
             eq(dailyCheckins.userId, userId),
-            gte(dailyCheckins.checkinDate, startDate)
+            gte(dailyCheckins.checkinDate, new Date(startDate).toISOString())
           )
         )
         .orderBy(desc(dailyCheckins.checkinDate));
@@ -225,7 +225,7 @@ export async function PUT(request: NextRequest) {
         patternType: validatedData.patternType,
         title: validatedData.title,
         description: validatedData.description,
-        confidence: validatedData.confidence,
+        confidenceScore: validatedData.confidenceScore,
         timeframe: validatedData.timeframe,
         dataPoints: JSON.stringify(validatedData.dataPoints),
         insights: JSON.stringify(validatedData.insights),
@@ -345,8 +345,8 @@ async function analyzeSeverity(events: HealthEvent[], checkins: DailyCheckin[]) 
   
   // Analyze check-in metrics
   checkins.forEach(checkin => {
-    if (checkin.mood) severityData.mood.push({ date: checkin.checkinDate, value: checkin.mood });
-    if (checkin.energy) severityData.energy.push({ date: checkin.checkinDate, value: checkin.energy });
+    if (checkin.moodRating) severityData.mood.push({ date: checkin.checkinDate, value: checkin.moodRating });
+    if (checkin.energyLevel) severityData.energy.push({ date: checkin.checkinDate, value: checkin.energyLevel });
     if (checkin.sleepQuality) severityData.sleep.push({ date: checkin.checkinDate, value: checkin.sleepQuality });
   });
   
@@ -361,7 +361,7 @@ async function analyzeSeverity(events: HealthEvent[], checkins: DailyCheckin[]) 
 function calculateMoodSymptomCorrelation(events: HealthEvent[], checkins: DailyCheckin[]) {
   // Simplified correlation calculation
   const symptomDays = events.filter(e => e.eventType === 'symptom').map(e => e.startDate.split('T')[0]);
-  const moodData = checkins.filter(c => c.mood).map(c => ({ date: c.checkinDate.split('T')[0], mood: c.mood }));
+  const moodData = checkins.filter(c => c.moodRating).map(c => ({ date: c.checkinDate.split('T')[0], mood: c.moodRating }));
   
   // Calculate correlation between symptom presence and mood
   let correlation = 0;
@@ -375,16 +375,16 @@ function calculateMoodSymptomCorrelation(events: HealthEvent[], checkins: DailyC
 }
 
 function calculateSleepEnergyCorrelation(checkins: DailyCheckin[]) {
-  const validCheckins = checkins.filter(c => c.sleepQuality && c.energy);
+  const validCheckins = checkins.filter(c => c.sleepQuality && c.energyLevel);
   if (validCheckins.length < 2) return { correlation: 0 };
   
   // Simple correlation calculation
   const n = validCheckins.length;
-  const sumSleep = validCheckins.reduce((sum, c) => sum + c.sleepQuality, 0);
-  const sumEnergy = validCheckins.reduce((sum, c) => sum + c.energy, 0);
-  const sumSleepEnergy = validCheckins.reduce((sum, c) => sum + (c.sleepQuality * c.energy), 0);
-  const sumSleepSq = validCheckins.reduce((sum, c) => sum + (c.sleepQuality * c.sleepQuality), 0);
-  const sumEnergySq = validCheckins.reduce((sum, c) => sum + (c.energy * c.energy), 0);
+  const sumSleep = validCheckins.reduce((sum, c) => sum + (c.sleepQuality || 0), 0);
+  const sumEnergy = validCheckins.reduce((sum, c) => sum + (c.energyLevel || 0), 0);
+  const sumSleepEnergy = validCheckins.reduce((sum, c) => sum + ((c.sleepQuality || 0) * (c.energyLevel || 0)), 0);
+  const sumSleepSq = validCheckins.reduce((sum, c) => sum + ((c.sleepQuality || 0) * (c.sleepQuality || 0)), 0);
+  const sumEnergySq = validCheckins.reduce((sum, c) => sum + ((c.energyLevel || 0) * (c.energyLevel || 0)), 0);
   
   const correlation = (n * sumSleepEnergy - sumSleep * sumEnergy) / 
     Math.sqrt((n * sumSleepSq - sumSleep * sumSleep) * (n * sumEnergySq - sumEnergy * sumEnergy));
@@ -412,9 +412,9 @@ function calculateSymptomTrends(events: HealthEvent[]) {
 }
 
 function calculateMoodTrends(checkins: DailyCheckin[]) {
-  const moodData = checkins.filter(c => c.mood).map(c => ({
-    date: c.checkinDate,
-    mood: c.mood
+  const moodData = checkins.filter(c => c.moodRating).map(c => ({
+    date: c.checkinDate.split('T')[0],
+    mood: c.moodRating || 0
   }));
   
   if (moodData.length < 2) return [];
