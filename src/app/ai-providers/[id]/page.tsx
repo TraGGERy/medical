@@ -196,7 +196,7 @@ const SelectTrigger = ({ children, className = '', value, isOpen, setIsOpen }: S
   </button>
 );
 
-const SelectValue = ({ placeholder }: { placeholder?: string }) => (
+const SelectValueDisplay = ({ placeholder }: { placeholder?: string }) => (
   <span className="text-muted-foreground">{placeholder}</span>
 );
 
@@ -207,7 +207,7 @@ interface SelectContentProps {
   onValueChange?: (value: string) => void;
 }
 
-const SelectContent = ({ children, isOpen, setIsOpen, onValueChange }: SelectContentProps) => {
+const SelectContentWrapper = ({ children, isOpen, setIsOpen, onValueChange }: SelectContentProps) => {
   if (!isOpen) return null;
   
   return (
@@ -234,7 +234,7 @@ interface SelectItemProps {
   setIsOpen?: (open: boolean) => void;
 }
 
-const SelectItem = ({ value, children, onValueChange, setIsOpen }: SelectItemProps) => (
+const SelectItemFirst = ({ value, children, onValueChange, setIsOpen }: SelectItemProps) => (
   <div
     onClick={() => {
       onValueChange?.(value);
