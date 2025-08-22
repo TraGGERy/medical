@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@clerk/nextjs';
 
-interface HealthCalendarEvent {
+export interface HealthCalendarEvent {
   type: 'health_event_created' | 'health_event_updated' | 'health_event_deleted' | 
         'daily_checkin_created' | 'daily_checkin_updated' | 
         'notification_created' | 'streak_updated' | 'pattern_analyzed';
@@ -146,7 +146,8 @@ class WebSocketService {
 
   private handleError(error: unknown): void {
     console.error('WebSocket error:', error);
-    this.callbacks.onError?.(error);
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    this.callbacks.onError?.(errorObj);
   }
 
   private handleHealthCalendarEvent(event: HealthCalendarEvent): void {

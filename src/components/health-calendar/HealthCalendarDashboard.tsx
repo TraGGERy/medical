@@ -5,7 +5,7 @@ import { Calendar, ChevronLeft, ChevronRight, Plus, Activity, Heart, Pill, Alert
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { useWebSocket } from '@/lib/websocket/websocket-service';
+import { useWebSocket, HealthCalendarEvent } from '@/lib/websocket/websocket-service';
 
 interface HealthEvent {
   id: string;
@@ -51,25 +51,25 @@ const HealthCalendarDashboard: React.FC = () => {
   
   // WebSocket integration for real-time updates
   const { connectionState, isConnected, emitHealthEvent } = useWebSocket({
-    onHealthEventUpdate: (event) => {
+    onHealthEventUpdate: (event: HealthCalendarEvent) => {
       console.log('Received health event update:', event);
       if (event.type === 'health_event_created') {
-        handleRealTimeEventCreated(event.data);
+        handleRealTimeEventCreated(event.data as any);
       } else if (event.type === 'health_event_updated') {
-        handleRealTimeEventUpdated(event.data);
+        handleRealTimeEventUpdated(event.data as any);
       } else if (event.type === 'health_event_deleted') {
-        handleRealTimeEventDeleted(event.data);
+        handleRealTimeEventDeleted(event.data as any);
       }
     },
-    onDailyCheckinUpdate: (event) => {
+    onDailyCheckinUpdate: (event: HealthCalendarEvent) => {
       console.log('Received daily checkin update:', event);
       if (event.type === 'daily_checkin_created' || event.type === 'daily_checkin_updated') {
-        handleRealTimeCheckinUpdate(event.data);
+        handleRealTimeCheckinUpdate(event.data as any);
       }
     },
-    onNotificationUpdate: (event) => {
+    onNotificationUpdate: (event: HealthCalendarEvent) => {
       console.log('Received notification update:', event);
-      toast.info(event.data.message || 'New health notification received');
+      toast.info((event.data as any).message || 'New health notification received');
     },
     onConnect: () => {
       toast.success('Connected to real-time updates');
@@ -77,7 +77,7 @@ const HealthCalendarDashboard: React.FC = () => {
     onDisconnect: () => {
       toast.warning('Disconnected from real-time updates');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('WebSocket error:', error);
       toast.error('Connection error occurred');
     }
@@ -134,10 +134,10 @@ const HealthCalendarDashboard: React.FC = () => {
   };
 
   // Real-time event handlers
-  const handleRealTimeEventCreated = (eventData: { id: string; title: string; description?: string; eventType: string; date: string; userId: string; createdAt: string; updatedAt: string }) => {
-    const newEvent = {
+  const handleRealTimeEventCreated = (eventData: { id: string; title: string; description?: string; eventType: string; date: string; severity?: number; time?: string; duration?: number; tags?: string[]; userId: string; createdAt: string; updatedAt: string }) => {
+    const newEvent: HealthEvent = {
       id: eventData.id,
-      eventType: eventData.eventType,
+      eventType: eventData.eventType as HealthEvent['eventType'],
       title: eventData.title,
       description: eventData.description,
       severity: eventData.severity,
@@ -150,10 +150,10 @@ const HealthCalendarDashboard: React.FC = () => {
     toast.success('New health event added');
   };
 
-  const handleRealTimeEventUpdated = (eventData: { id: string; title: string; description?: string; eventType: string; date: string; userId: string; createdAt: string; updatedAt: string }) => {
-    const updatedEvent = {
+  const handleRealTimeEventUpdated = (eventData: { id: string; title: string; description?: string; eventType: string; date: string; severity?: number; time?: string; duration?: number; tags?: string[]; userId: string; createdAt: string; updatedAt: string }) => {
+    const updatedEvent: HealthEvent = {
       id: eventData.id,
-      eventType: eventData.eventType,
+      eventType: eventData.eventType as HealthEvent['eventType'],
       title: eventData.title,
       description: eventData.description,
       severity: eventData.severity,
@@ -173,8 +173,8 @@ const HealthCalendarDashboard: React.FC = () => {
     toast.info('Health event deleted');
   };
 
-  const handleRealTimeCheckinUpdate = (checkinData: { id: string; date: string; mood: number; energy: number; sleepQuality: number; notes?: string; userId: string; createdAt: string; updatedAt: string }) => {
-    const updatedCheckin = {
+  const handleRealTimeCheckinUpdate = (checkinData: { id: string; date: string; mood: number; energy: number; sleepQuality: number; sleepHours?: number; symptoms?: string[]; medications?: string[]; notes?: string; userId: string; createdAt: string; updatedAt: string }) => {
+    const updatedCheckin: DailyCheckin = {
       id: checkinData.id,
       date: checkinData.date,
       mood: checkinData.mood,
