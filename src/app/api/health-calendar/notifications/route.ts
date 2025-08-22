@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { healthNotifications } from '@/lib/db/schema';
+import { healthNotifications, healthEvents, dailyCheckins, type HealthNotification, type DailyCheckin, type HealthEvent } from '@/lib/db/schema';
 import { eq, and, desc, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { Resend } from 'resend';
+
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -14,8 +15,7 @@ const notificationSchema = z.object({
   message: z.string().min(1),
   triggerCondition: z.record(z.any()).optional(),
   scheduledAt: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  metadata: z.record(z.any()).optional()
+  priority: z.enum(['low', 'medium', 'high']).default('medium')
 });
 
 const updateNotificationSchema = z.object({
@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
         title: validatedData.title,
         message: validatedData.message,
         triggerCondition: validatedData.triggerCondition ? JSON.stringify(validatedData.triggerCondition) : null,
-        scheduledAt: validatedData.scheduledAt || new Date().toISOString(),
+        scheduledAt: validatedData.scheduledAt ? new Date(validatedData.scheduledAt) : new Date(),
         priority: validatedData.priority,
-        metadata: validatedData.metadata ? JSON.stringify(validatedData.metadata) : null
+
       })
       .returning();
 
@@ -74,47 +74,46 @@ export async function GET(request: NextRequest) {
     const priority = searchParams.get('priority');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
 
-    let whereConditions = [eq(healthNotifications.userId, userId)];
+    const conditions = [eq(healthNotifications.userId, userId)];
 
     if (status) {
-      whereConditions.push(eq(healthNotifications.status, status));
+      conditions.push(eq(healthNotifications.status, status));
     }
 
     if (notificationType) {
-      whereConditions.push(eq(healthNotifications.notificationType, notificationType));
+      conditions.push(eq(healthNotifications.notificationType, notificationType));
     }
 
     if (priority) {
-      whereConditions.push(eq(healthNotifications.priority, priority));
+      conditions.push(eq(healthNotifications.priority, priority));
     }
 
     if (startDate) {
-      whereConditions.push(gte(healthNotifications.scheduledAt, new Date(startDate).toISOString()));
+      conditions.push(gte(healthNotifications.scheduledAt, new Date(startDate)));
     }
 
     if (endDate) {
-      whereConditions.push(lte(healthNotifications.scheduledAt, new Date(endDate).toISOString()));
+      conditions.push(lte(healthNotifications.scheduledAt, new Date(endDate)));
     }
 
     const notifications = await db
       .select()
       .from(healthNotifications)
-      .where(and(...whereConditions))
-      .orderBy(desc(healthNotifications.scheduledAt))
+      .where(and(...conditions))
+      .orderBy(desc(healthNotifications.createdAt))
       .limit(limit)
-      .offset(offset);
+      .offset((page - 1) * limit);
 
-    // Parse JSON fields
-    const notificationsWithParsedData = notifications.map(notification => ({
+    // Parse JSON fields and format response
+    const formattedNotifications = notifications.map(notification => ({
       ...notification,
-      triggerCondition: notification.triggerCondition ? JSON.parse(notification.triggerCondition as string) : {},
-      metadata: notification.metadata ? JSON.parse(notification.metadata as string) : {}
+      triggerCondition: typeof notification.triggerCondition === 'string' ? JSON.parse(notification.triggerCondition) : notification.triggerCondition,
     }));
 
-    return NextResponse.json({ notifications: notificationsWithParsedData });
+    return NextResponse.json({ notifications: formattedNotifications });
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return NextResponse.json(
@@ -153,15 +152,15 @@ export async function PUT(request: NextRequest) {
 
     const updateData: Partial<{
       status: string;
-      sentAt: string | null;
+      sentAt: Date | null;
       errorMessage: string | null;
-      updatedAt: string;
+      updatedAt: Date;
     }> = {
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date()
     };
 
     if (validatedData.status) updateData.status = validatedData.status;
-    if (validatedData.sentAt) updateData.sentAt = validatedData.sentAt;
+    if (validatedData.sentAt) updateData.sentAt = new Date(validatedData.sentAt);
     if (validatedData.errorMessage !== undefined) updateData.errorMessage = validatedData.errorMessage;
 
     const [updatedNotification] = await db
@@ -232,7 +231,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get pending notifications that are due
-    const now = new Date().toISOString();
+    const now = new Date();
     const pendingNotifications = await db
       .select()
       .from(healthNotifications)
@@ -269,8 +268,7 @@ export async function PATCH(request: NextRequest) {
           .update(healthNotifications)
           .set({
             status: 'sent',
-            sentAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            sentAt: new Date()
           })
           .where(eq(healthNotifications.id, notification.id));
 
@@ -286,9 +284,7 @@ export async function PATCH(request: NextRequest) {
         await db
           .update(healthNotifications)
           .set({
-            status: 'failed',
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            updatedAt: new Date().toISOString()
+            status: 'failed'
           })
           .where(eq(healthNotifications.id, notification.id));
 

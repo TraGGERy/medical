@@ -13,22 +13,22 @@ type HealthEvent = {
   title: string;
   description: string | null;
   severity: number | null;
-  startDate: string;
-  endDate: string | null;
+  startDate: Date;
+  endDate: Date | null;
   isOngoing: boolean;
   frequency: string | null;
   dosage: string | null;
   unit: string | null;
   tags: any;
   metadata: any;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type DailyCheckin = {
   id: string;
   userId: string;
-  checkinDate: string;
+  checkinDate: Date;
   moodRating: number | null;
   energyLevel: number | null;
   sleepQuality: number | null;
@@ -37,8 +37,8 @@ type DailyCheckin = {
   exerciseMinutes: number | null;
   waterIntake: number | null;
   notes: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type CorrelationData = {
@@ -65,6 +65,49 @@ type SeverityData = {
   sleep: Array<{ date: string; value: number }>;
 };
 
+type CorrelationAnalysis = {
+  type: 'correlation';
+  correlations: CorrelationData[];
+  insights: string[];
+};
+
+type TrendAnalysis = {
+  type: 'trend';
+  trends: TrendData[];
+  insights: string[];
+};
+
+type FrequencyAnalysis = {
+  type: 'frequency';
+  eventFrequencies: Record<string, number>;
+  checkinFrequency: number;
+  insights: string[];
+};
+
+type SeverityAnalysis = {
+  type: 'severity';
+  data: SeverityData;
+  insights: string[];
+};
+
+type HealthPattern = {
+  id: string;
+  userId: string;
+  patternType: string;
+  title: string;
+  description: string;
+  confidenceScore: string;
+  dataPoints: any;
+  correlations: any;
+  insights: any;
+  recommendations: any;
+  periodStart: Date;
+  periodEnd: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 const patternAnalysisSchema = z.object({
   timeframe: z.enum(['week', 'month', 'quarter', 'year']).default('month'),
   eventTypes: z.array(z.string()).optional(),
@@ -77,11 +120,12 @@ const createPatternSchema = z.object({
   title: z.string().min(1),
   description: z.string(),
   confidenceScore: z.number().min(0).max(1),
-  timeframe: z.string(),
-  dataPoints: z.array(z.record(z.any())),
+  periodStart: z.string(),
+  periodEnd: z.string(),
+  dataPoints: z.record(z.any()),
+  correlations: z.record(z.any()).optional(),
   insights: z.array(z.string()),
-  recommendations: z.array(z.string()).optional(),
-  metadata: z.record(z.any()).optional()
+  recommendations: z.array(z.string()).optional()
 });
 
 // POST - Analyze health patterns
@@ -96,10 +140,10 @@ export async function POST(request: NextRequest) {
     const validatedData = patternAnalysisSchema.parse(body);
 
     const timeframeDays = getTimeframeDays(validatedData.timeframe);
-    const startDate = new Date(Date.now() - timeframeDays * 24 * 60 * 60 * 1000).toISOString();
+    const startDate = new Date(Date.now() - timeframeDays * 24 * 60 * 60 * 1000);
 
     // Fetch health events
-    let eventConditions = [eq(healthEvents.userId, userId), gte(healthEvents.startDate, new Date(startDate).toISOString())];
+    let eventConditions = [eq(healthEvents.userId, userId), gte(healthEvents.startDate, startDate)];
     if (validatedData.eventTypes && validatedData.eventTypes.length > 0) {
       eventConditions.push(sql`${healthEvents.eventType} = ANY(${validatedData.eventTypes})`);
     }
@@ -119,14 +163,14 @@ export async function POST(request: NextRequest) {
         .where(
           and(
             eq(dailyCheckins.userId, userId),
-            gte(dailyCheckins.checkinDate, new Date(startDate).toISOString())
+            gte(dailyCheckins.checkinDate, startDate)
           )
         )
         .orderBy(desc(dailyCheckins.checkinDate));
     }
 
     // Perform analysis based on type
-    let analysisResult;
+    let analysisResult: CorrelationAnalysis | TrendAnalysis | FrequencyAnalysis | SeverityAnalysis;
     switch (validatedData.analysisType) {
       case 'correlation':
         analysisResult = await analyzeCorrelations(events, checkins);
@@ -191,10 +235,10 @@ export async function GET(request: NextRequest) {
     // Parse JSON fields
     const patternsWithParsedData = patterns.map(pattern => ({
       ...pattern,
-      dataPoints: pattern.dataPoints ? JSON.parse(pattern.dataPoints as string) : [],
-      insights: pattern.insights ? JSON.parse(pattern.insights as string) : [],
-      recommendations: pattern.recommendations ? JSON.parse(pattern.recommendations as string) : [],
-      metadata: pattern.metadata ? JSON.parse(pattern.metadata as string) : {}
+      dataPoints: typeof pattern.dataPoints === 'string' ? JSON.parse(pattern.dataPoints) : pattern.dataPoints || {},
+      correlations: typeof pattern.correlations === 'string' ? JSON.parse(pattern.correlations) : pattern.correlations || {},
+      insights: typeof pattern.insights === 'string' ? JSON.parse(pattern.insights) : pattern.insights || [],
+      recommendations: typeof pattern.recommendations === 'string' ? JSON.parse(pattern.recommendations) : pattern.recommendations || []
     }));
 
     return NextResponse.json({ patterns: patternsWithParsedData });
@@ -225,12 +269,13 @@ export async function PUT(request: NextRequest) {
         patternType: validatedData.patternType,
         title: validatedData.title,
         description: validatedData.description,
-        confidenceScore: validatedData.confidenceScore,
-        timeframe: validatedData.timeframe,
-        dataPoints: JSON.stringify(validatedData.dataPoints),
-        insights: JSON.stringify(validatedData.insights),
-        recommendations: validatedData.recommendations ? JSON.stringify(validatedData.recommendations) : null,
-        metadata: validatedData.metadata ? JSON.stringify(validatedData.metadata) : null
+        confidenceScore: validatedData.confidenceScore.toString(),
+        periodStart: new Date(validatedData.periodStart),
+        periodEnd: new Date(validatedData.periodEnd),
+        dataPoints: validatedData.dataPoints || {},
+        correlations: validatedData.correlations || {},
+        insights: validatedData.insights || [],
+        recommendations: validatedData.recommendations || [],
       })
       .returning();
 
@@ -255,7 +300,7 @@ function getTimeframeDays(timeframe: string): number {
   }
 }
 
-async function analyzeCorrelations(events: HealthEvent[], checkins: DailyCheckin[]) {
+async function analyzeCorrelations(events: HealthEvent[], checkins: DailyCheckin[]): Promise<CorrelationAnalysis> {
   const correlations = [];
   
   // Analyze correlation between mood and symptoms
@@ -287,7 +332,7 @@ async function analyzeCorrelations(events: HealthEvent[], checkins: DailyCheckin
   };
 }
 
-async function analyzeTrends(events: HealthEvent[], checkins: DailyCheckin[]) {
+async function analyzeTrends(events: HealthEvent[], checkins: DailyCheckin[]): Promise<TrendAnalysis> {
   const trends = [];
   
   // Symptom frequency trends
@@ -305,8 +350,8 @@ async function analyzeTrends(events: HealthEvent[], checkins: DailyCheckin[]) {
   };
 }
 
-async function analyzeFrequency(events: HealthEvent[], checkins: DailyCheckin[]) {
-  const frequencies = {};
+async function analyzeFrequency(events: HealthEvent[], checkins: DailyCheckin[]): Promise<FrequencyAnalysis> {
+  const frequencies: Record<string, number> = {};
   
   // Event type frequencies
   events.forEach(event => {
@@ -325,8 +370,8 @@ async function analyzeFrequency(events: HealthEvent[], checkins: DailyCheckin[])
   };
 }
 
-async function analyzeSeverity(events: HealthEvent[], checkins: DailyCheckin[]) {
-  const severityData = {
+async function analyzeSeverity(events: HealthEvent[], checkins: DailyCheckin[]): Promise<SeverityAnalysis> {
+  const severityData: SeverityData = {
     symptoms: [],
     mood: [],
     energy: [],
@@ -336,18 +381,20 @@ async function analyzeSeverity(events: HealthEvent[], checkins: DailyCheckin[]) 
   // Analyze symptom severity
   events.filter(e => e.eventType === 'symptom' && e.severity)
     .forEach(event => {
-      severityData.symptoms.push({
-        date: event.startDate,
-        severity: event.severity,
-        title: event.title
-      });
+      if (event.severity !== null) {
+        severityData.symptoms.push({
+          date: event.startDate.toISOString().split('T')[0],
+          severity: event.severity,
+          title: event.title
+        });
+      }
     });
   
   // Analyze check-in metrics
   checkins.forEach(checkin => {
-    if (checkin.moodRating) severityData.mood.push({ date: checkin.checkinDate, value: checkin.moodRating });
-    if (checkin.energyLevel) severityData.energy.push({ date: checkin.checkinDate, value: checkin.energyLevel });
-    if (checkin.sleepQuality) severityData.sleep.push({ date: checkin.checkinDate, value: checkin.sleepQuality });
+    if (checkin.moodRating !== null) severityData.mood.push({ date: checkin.checkinDate.toISOString().split('T')[0], value: checkin.moodRating });
+    if (checkin.energyLevel !== null) severityData.energy.push({ date: checkin.checkinDate.toISOString().split('T')[0], value: checkin.energyLevel });
+    if (checkin.sleepQuality !== null) severityData.sleep.push({ date: checkin.checkinDate.toISOString().split('T')[0], value: checkin.sleepQuality });
   });
   
   return {
@@ -360,8 +407,8 @@ async function analyzeSeverity(events: HealthEvent[], checkins: DailyCheckin[]) 
 // Helper calculation functions
 function calculateMoodSymptomCorrelation(events: HealthEvent[], checkins: DailyCheckin[]) {
   // Simplified correlation calculation
-  const symptomDays = events.filter(e => e.eventType === 'symptom').map(e => e.startDate.split('T')[0]);
-  const moodData = checkins.filter(c => c.moodRating).map(c => ({ date: c.checkinDate.split('T')[0], mood: c.moodRating }));
+  const symptomDays = events.filter(e => e.eventType === 'symptom').map(e => e.startDate.toISOString().split('T')[0]);
+  const moodData = checkins.filter(c => c.moodRating).map(c => ({ date: c.checkinDate.toISOString().split('T')[0], mood: c.moodRating || 0 }));
   
   // Calculate correlation between symptom presence and mood
   let correlation = 0;
@@ -392,9 +439,9 @@ function calculateSleepEnergyCorrelation(checkins: DailyCheckin[]) {
   return { correlation: isNaN(correlation) ? 0 : correlation };
 }
 
-function calculateSymptomTrends(events: HealthEvent[]) {
+function calculateSymptomTrends(events: HealthEvent[]): TrendData[] {
   const symptoms = events.filter(e => e.eventType === 'symptom');
-  const symptomCounts = {};
+  const symptomCounts: Record<string, number> = {};
   
   symptoms.forEach(symptom => {
     const week = getWeekNumber(new Date(symptom.startDate));
@@ -406,14 +453,14 @@ function calculateSymptomTrends(events: HealthEvent[]) {
     type: 'symptom_frequency',
     title: key.split('_')[0],
     week: key.split('_')[1],
-    count,
-    trend: 'stable' // Simplified - would need more complex calculation
+    count: count as number,
+    trend: 'stable' as string
   }));
 }
 
-function calculateMoodTrends(checkins: DailyCheckin[]) {
+function calculateMoodTrends(checkins: DailyCheckin[]): TrendData[] {
   const moodData = checkins.filter(c => c.moodRating).map(c => ({
-    date: c.checkinDate.split('T')[0],
+    date: c.checkinDate.toISOString().split('T')[0],
     mood: c.moodRating || 0
   }));
   
@@ -437,7 +484,7 @@ function getWeekNumber(date: Date): number {
 }
 
 function generateCorrelationInsights(correlations: CorrelationData[]): string[] {
-  const insights = [];
+  const insights: string[] = [];
   
   correlations.forEach(corr => {
     if (corr.type === 'mood_symptom' && Math.abs(corr.correlation) > 0.3) {
@@ -452,10 +499,10 @@ function generateCorrelationInsights(correlations: CorrelationData[]): string[] 
 }
 
 function generateTrendInsights(trends: TrendData[]): string[] {
-  const insights = [];
+  const insights: string[] = [];
   
   trends.forEach(trend => {
-    if (trend.type === 'mood_trend') {
+    if (trend.type === 'mood_trend' && trend.average !== undefined && trend.trend !== undefined) {
       insights.push(`Your average mood is ${trend.average.toFixed(1)}/5 with a ${trend.trend} trend.`);
     }
   });
@@ -464,7 +511,7 @@ function generateTrendInsights(trends: TrendData[]): string[] {
 }
 
 function generateFrequencyInsights(frequencies: Record<string, number>, checkinFreq: number): string[] {
-  const insights = [];
+  const insights: string[] = [];
   
   const mostFrequent = Object.entries(frequencies)
     .sort(([,a], [,b]) => (b as number) - (a as number))[0];
@@ -479,7 +526,7 @@ function generateFrequencyInsights(frequencies: Record<string, number>, checkinF
 }
 
 function generateSeverityInsights(severityData: SeverityData): string[] {
-  const insights = [];
+  const insights: string[] = [];
   
   if (severityData.symptoms.length > 0) {
     const avgSeverity = severityData.symptoms.reduce((sum, s) => sum + s.severity, 0) / severityData.symptoms.length;

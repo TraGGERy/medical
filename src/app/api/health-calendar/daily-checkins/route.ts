@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { dailyCheckins, checkinSymptoms, checkinMedications, streakRecords } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 
 const dailyCheckinSchema = z.object({
@@ -63,12 +63,12 @@ export async function POST(request: NextRequest) {
           moodRating: validatedData.moodRating,
           energyLevel: validatedData.energyLevel,
           sleepQuality: validatedData.sleepQuality,
-          sleepHours: validatedData.sleepHours?.toString(),
+          sleepHours: validatedData.sleepHours,
           stressLevel: validatedData.stressLevel,
           exerciseMinutes: validatedData.exerciseMinutes,
-          waterIntake: validatedData.waterIntake?.toString(),
+          waterIntake: validatedData.waterIntake,
           notes: validatedData.notes,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date()
         })
         .where(eq(dailyCheckins.id, existingCheckin[0].id))
         .returning();
@@ -152,6 +152,15 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
     const limit = parseInt(searchParams.get('limit') || '30');
 
+    let whereConditions = [eq(dailyCheckins.userId, userId)];
+
+    if (startDate) {
+      whereConditions.push(gte(dailyCheckins.checkinDate, new Date(startDate)));
+    }
+    if (endDate) {
+      whereConditions.push(lte(dailyCheckins.checkinDate, new Date(endDate)));
+    }
+
     let query = db
       .select({
         id: dailyCheckins.id,
@@ -168,7 +177,7 @@ export async function GET(request: NextRequest) {
         updatedAt: dailyCheckins.updatedAt
       })
       .from(dailyCheckins)
-      .where(eq(dailyCheckins.userId, userId))
+      .where(and(...whereConditions))
       .orderBy(desc(dailyCheckins.checkinDate))
       .limit(limit);
 
@@ -224,7 +233,7 @@ async function updateStreakRecord(userId: string, streakType: string) {
       .limit(1);
 
     if (existingStreak) {
-      const lastActivityDate = existingStreak.lastActivityDate?.split('T')[0];
+      const lastActivityDate = existingStreak.lastActivityDate?.toISOString().split('T')[0];
       let newCurrentStreak = existingStreak.currentStreak || 0;
       let newLongestStreak = existingStreak.longestStreak || 0;
       let streakStartDate = existingStreak.streakStartDate;
@@ -235,7 +244,7 @@ async function updateStreakRecord(userId: string, streakType: string) {
       } else if (lastActivityDate !== today) {
         // Reset streak
         newCurrentStreak = 1;
-        streakStartDate = today;
+        streakStartDate = new Date(today);
       }
 
       // Update longest streak if current is longer
@@ -248,10 +257,10 @@ async function updateStreakRecord(userId: string, streakType: string) {
         .set({
           currentStreak: newCurrentStreak,
           longestStreak: newLongestStreak,
-          lastActivityDate: today,
+          lastActivityDate: new Date(today),
           streakStartDate,
           totalActivities: (existingStreak.totalActivities || 0) + 1,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date()
         })
         .where(eq(streakRecords.id, existingStreak.id));
     } else {
@@ -261,8 +270,8 @@ async function updateStreakRecord(userId: string, streakType: string) {
         streakType,
         currentStreak: 1,
         longestStreak: 1,
-        lastActivityDate: today,
-        streakStartDate: today,
+        lastActivityDate: new Date(today),
+        streakStartDate: new Date(today),
         totalActivities: 1
       });
     }

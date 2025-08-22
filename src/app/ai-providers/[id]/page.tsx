@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 // Inline UI Components
 interface CardProps {
@@ -248,6 +248,57 @@ const SelectItem = ({ value, children, onValueChange, setIsOpen }: SelectItemPro
 
 const Separator = ({ className = '' }: { className?: string }) => (
   <div className={`shrink-0 bg-border h-[1px] w-full ${className}`} />
+);
+
+interface SelectContentProps {
+  children: React.ReactNode;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
+}
+
+const SelectContent = ({ children, value, onValueChange, isOpen, setIsOpen }: SelectContentProps) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95">
+      {React.Children.map(children, child => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child as React.ReactElement<any>, {
+            onValueChange,
+            setIsOpen
+          });
+        }
+        return child;
+      })}
+    </div>
+  );
+};
+
+interface SelectItemProps {
+  value: string;
+  children: React.ReactNode;
+  onValueChange?: (value: string) => void;
+  setIsOpen?: (open: boolean) => void;
+}
+
+const SelectItem = ({ value, children, onValueChange, setIsOpen }: SelectItemProps) => (
+  <div
+    className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+    onClick={() => {
+      onValueChange?.(value);
+      setIsOpen?.(false);
+    }}
+  >
+    {children}
+  </div>
+);
+
+const SelectValue = ({ placeholder, value }: { placeholder?: string; value?: string }) => (
+  <span className={value ? "" : "text-muted-foreground"}>
+    {value || placeholder}
+  </span>
 );
 import { 
   Star, 
@@ -664,17 +715,17 @@ export default function AiProviderProfilePage() {
                       <Input
                         id="patientAge"
                         type="number"
-                        placeholder="Age"
+                        placeholder="Enter age"
                         value={consultationForm.patientAge || ''}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConsultationForm(prev => ({ ...prev, patientAge: e.target.value ? parseInt(e.target.value) : undefined }))}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConsultationForm(prev => ({ ...prev, patientAge: parseInt(e.target.value) || undefined }))}
                         className="mt-1"
                       />
                     </div>
                     <div>
                       <Label htmlFor="patientGender">Gender</Label>
-                      <Select value={consultationForm.patientGender} onValueChange={(value) => setConsultationForm(prev => ({ ...prev, patientGender: value }))}>
+                      <Select value={consultationForm.patientGender || ''} onValueChange={(value) => setConsultationForm(prev => ({ ...prev, patientGender: value }))}>
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select" />
+                          <SelectValue placeholder="Select" value={consultationForm.patientGender} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="male">Male</SelectItem>
@@ -690,7 +741,7 @@ export default function AiProviderProfilePage() {
                     <Label htmlFor="urgencyLevel">Urgency Level</Label>
                     <Select value={consultationForm.urgencyLevel.toString()} onValueChange={(value) => setConsultationForm(prev => ({ ...prev, urgencyLevel: parseInt(value) }))}>
                       <SelectTrigger className="mt-1">
-                        <SelectValue />
+                        <SelectValue value={consultationForm.urgencyLevel.toString()} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">Low - General consultation</SelectItem>
@@ -707,7 +758,7 @@ export default function AiProviderProfilePage() {
                     <Textarea
                       id="medicalHistory"
                       placeholder="Previous conditions, surgeries, etc. (comma-separated)..."
-                      value={consultationForm.medicalHistory}
+                      value={consultationForm.medicalHistory || ''}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm(prev => ({ ...prev, medicalHistory: e.target.value }))}
                       className="mt-1"
                     />
@@ -718,7 +769,7 @@ export default function AiProviderProfilePage() {
                     <Textarea
                       id="currentMedications"
                       placeholder="List current medications (comma-separated)..."
-                      value={consultationForm.currentMedications}
+                      value={consultationForm.currentMedications || ''}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm(prev => ({ ...prev, currentMedications: e.target.value }))}
                       className="mt-1"
                     />
@@ -729,7 +780,7 @@ export default function AiProviderProfilePage() {
                     <Textarea
                       id="allergies"
                       placeholder="Known allergies (comma-separated)..."
-                      value={consultationForm.allergies}
+                      value={consultationForm.allergies || ''}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm(prev => ({ ...prev, allergies: e.target.value }))}
                       className="mt-1"
                     />

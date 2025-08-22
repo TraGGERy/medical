@@ -29,8 +29,16 @@ import ConsultationHistory from '@/components/dashboard/ConsultationHistory';
 import ActiveConsultationChat from '@/components/dashboard/ActiveConsultationChat';
 import HealthCalendarDashboard from '@/components/health-calendar/HealthCalendarDashboard';
 import StatCard from '@/components/ui/statcard';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+
+// Inline Card component to resolve module import issues
+const Card = ({ className = '', children, ...props }: { className?: string; children: React.ReactNode; [key: string]: any }) => {
+  return (
+    <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`} {...props}>
+      {children}
+    </div>
+  );
+};
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 

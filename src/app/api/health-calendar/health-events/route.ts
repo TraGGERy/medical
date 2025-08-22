@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
         title: validatedData.title,
         description: validatedData.description,
         severity: validatedData.severity,
-        startDate: validatedData.startDate,
-        endDate: validatedData.endDate,
+        startDate: new Date(validatedData.startDate),
+        endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
         isOngoing: validatedData.isOngoing,
         frequency: validatedData.frequency,
         dosage: validatedData.dosage,
@@ -92,11 +92,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate) {
-      whereConditions.push(gte(healthEvents.startDate, startDate));
+      whereConditions.push(gte(healthEvents.startDate, new Date(startDate)));
     }
 
     if (endDate) {
-      whereConditions.push(lte(healthEvents.startDate, endDate));
+      whereConditions.push(lte(healthEvents.startDate, new Date(endDate)));
     }
 
     if (isOngoing !== null) {
@@ -160,17 +160,17 @@ export async function PUT(request: NextRequest) {
       title: string;
       description: string | null;
       severity: number | null;
-      startDate: string;
-      endDate: string | null;
+      startDate: Date;
+      endDate: Date | null;
       isOngoing: boolean;
       frequency: string | null;
       dosage: string | null;
       unit: string | null;
       tags: string;
       metadata: string;
-      updatedAt: string;
+      updatedAt: Date;
     }> = {
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date()
     };
 
     // Only update provided fields
@@ -178,8 +178,8 @@ export async function PUT(request: NextRequest) {
     if (validatedData.title) updateData.title = validatedData.title;
     if (validatedData.description !== undefined) updateData.description = validatedData.description;
     if (validatedData.severity !== undefined) updateData.severity = validatedData.severity;
-    if (validatedData.startDate) updateData.startDate = validatedData.startDate;
-    if (validatedData.endDate !== undefined) updateData.endDate = validatedData.endDate;
+    if (validatedData.startDate) updateData.startDate = new Date(validatedData.startDate);
+    if (validatedData.endDate !== undefined) updateData.endDate = validatedData.endDate ? new Date(validatedData.endDate) : null;
     if (validatedData.isOngoing !== undefined) updateData.isOngoing = validatedData.isOngoing;
     if (validatedData.frequency !== undefined) updateData.frequency = validatedData.frequency;
     if (validatedData.dosage !== undefined) updateData.dosage = validatedData.dosage;
@@ -249,7 +249,7 @@ export async function DELETE(request: NextRequest) {
 // Helper function to check for persistent symptoms
 async function checkPersistentSymptoms(userId: string, symptomTitle: string) {
   try {
-    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
     
     // Count ongoing symptoms with the same title in the last 5 days
     const persistentSymptoms = await db
@@ -292,9 +292,9 @@ async function checkPersistentSymptoms(userId: string, symptomTitle: string) {
           triggerCondition: JSON.stringify({
             symptomTitle,
             consecutiveDays: count,
-            detectedAt: new Date().toISOString()
+            detectedAt: new Date()
           }),
-          scheduledAt: new Date().toISOString()
+          scheduledAt: new Date()
         });
       }
     }

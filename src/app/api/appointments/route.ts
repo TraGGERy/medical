@@ -206,7 +206,16 @@ export async function POST(request: NextRequest) {
       .where(
         and(
           eq(telemedicineAppointments.providerId, validatedData.providerId),
-          eq(telemedicineAppointments.scheduledAt, appointmentDateTime),
+          or(
+            and(
+              gte(telemedicineAppointments.scheduledAt, appointmentDateTime),
+              lte(telemedicineAppointments.scheduledAt, endTime)
+            ),
+            and(
+              lte(telemedicineAppointments.scheduledAt, appointmentDateTime),
+              gte(telemedicineAppointments.scheduledAt, new Date(appointmentDateTime.getTime() - 180 * 60000)) // Check 3 hours before
+            )
+          ),
           or(
             eq(telemedicineAppointments.status, 'scheduled'),
             eq(telemedicineAppointments.status, 'confirmed'),

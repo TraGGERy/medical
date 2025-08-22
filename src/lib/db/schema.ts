@@ -743,3 +743,25 @@ export type NewProviderReview = typeof providerReviews.$inferInsert;
 
 export type Prescription = typeof prescriptions.$inferSelect;
 export type NewPrescription = typeof prescriptions.$inferInsert;
+
+// Health Calendar types
+export type DailyCheckin = typeof dailyCheckins.$inferSelect;
+export type NewDailyCheckin = typeof dailyCheckins.$inferInsert;
+
+export type HealthEvent = typeof healthEvents.$inferSelect;
+export type NewHealthEvent = typeof healthEvents.$inferInsert;
+
+export type CheckinSymptom = typeof checkinSymptoms.$inferSelect;
+export type NewCheckinSymptom = typeof checkinSymptoms.$inferInsert;
+
+export type CheckinMedication = typeof checkinMedications.$inferSelect;
+export type NewCheckinMedication = typeof checkinMedications.$inferInsert;
+
+export type HealthNotification = typeof healthNotifications.$inferSelect;
+export type NewHealthNotification = typeof healthNotifications.$inferInsert;
+
+export type StreakRecord = typeof streakRecords.$inferSelect;
+export type NewStreakRecord = typeof streakRecords.$inferInsert;
+
+export type HealthPattern = typeof healthPatterns.$inferSelect;
+export type NewHealthPattern = typeof healthPatterns.$inferInsert;

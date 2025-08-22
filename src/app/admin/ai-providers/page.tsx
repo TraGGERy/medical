@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 // Inline UI Components
 const Card = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
   <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`} {...props}>
