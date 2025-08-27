@@ -1339,8 +1339,8 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                       >
                         <p className="whitespace-pre-wrap">{message.content}</p>
                         
-                        {/* Referral Notification with inline Switch Doctor button */}
-                        {(message.senderType === 'ai_provider' || message.senderType === 'ai') && message.metadata?.referralNeeded && (
+{/* Referral Notification with inline Switch Doctor button */}
+                        {(message.senderType === 'ai_provider' || message.senderType === 'ai') && Boolean((message.metadata as any)?.referralNeeded) && (
                           <div id={`referral-${message.id}`} className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="flex items-start gap-2">
                               <div className="flex-shrink-0">
@@ -1353,16 +1353,16 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                                   Specialist Referral Recommended
                                 </h4>
                                 <p className="text-sm text-blue-700 mb-3">
-                                  A {message.metadata.recommendedSpecialty} specialist is recommended for your case.
-                                  {message.metadata.suggestedProviderName && (
-                                    <span> Dr. {message.metadata.suggestedProviderName} is available to assist you.</span>
+                                  A {typeof (message.metadata as any)?.recommendedSpecialty === 'string' ? (message.metadata as any).recommendedSpecialty : 'specialist'} is recommended for your case.
+                                  {typeof (message.metadata as any)?.suggestedProviderName === 'string' && (
+                                    <span> Dr. {(message.metadata as any).suggestedProviderName} is available to assist you.</span>
                                   )}
                                 </p>
-                                {message.metadata.suggestedProvider && (
+                                {typeof (message.metadata as any)?.suggestedProvider === 'string' && (
                                   <Button
                                     onClick={() => switchDoctor(
-                                      message.metadata.suggestedProvider,
-                                      `Referral to ${message.metadata.recommendedSpecialty} specialist`
+                                      ((message.metadata as any).suggestedProvider as string) ?? '',
+                                      `Referral to ${typeof (message.metadata as any)?.recommendedSpecialty === 'string' ? (message.metadata as any).recommendedSpecialty : 'specialist'}`
                                     )}
                                     disabled={switchingDoctor}
                                     size="sm"

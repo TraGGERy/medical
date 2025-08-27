@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = streakUpdateSchema.parse(body);
     
-    const today = validatedData.date || new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Determine the activity date (now by default, or a specific date if provided)
+    const activityDate = validatedData.date ? new Date(validatedData.date) : new Date();
+    const todayStr = activityDate.toISOString().split('T')[0];
+    const yesterdayStr = new Date(activityDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Get current streak record
     const [currentStreak] = await db
@@ -44,26 +46,28 @@ export async function POST(request: NextRequest) {
 
     let newCurrentStreak = 1;
     let newLongestStreak = 1;
-    let lastActivityDate = today;
 
     if (currentStreak) {
-      // Check if activity was already recorded today
-      if (currentStreak.lastActivityDate === today) {
+      const lastActivityStr = currentStreak.lastActivityDate
+        ? currentStreak.lastActivityDate.toISOString().split('T')[0]
+        : null;
+      // Check if activity was already recorded for the activityDate
+      if (lastActivityStr === todayStr) {
         return NextResponse.json({
           success: true,
           streak: currentStreak,
-          message: 'Activity already recorded for today'
+          message: 'Activity already recorded for this date'
         });
       }
 
       // Check if this continues the streak (yesterday or today)
-      if (currentStreak.lastActivityDate === yesterday) {
-        newCurrentStreak = currentStreak.currentStreak + 1;
-        newLongestStreak = Math.max(currentStreak.longestStreak, newCurrentStreak);
+      if (lastActivityStr === yesterdayStr) {
+        newCurrentStreak = (currentStreak.currentStreak || 0) + 1;
+        newLongestStreak = Math.max(currentStreak.longestStreak || 0, newCurrentStreak);
       } else {
         // Streak broken, start new one
         newCurrentStreak = 1;
-        newLongestStreak = currentStreak.longestStreak;
+        newLongestStreak = Math.max(currentStreak.longestStreak || 0, 1);
       }
     }
 
@@ -73,9 +77,9 @@ export async function POST(request: NextRequest) {
       streakType: validatedData.streakType,
       currentStreak: newCurrentStreak,
       longestStreak: newLongestStreak,
-      lastActivityDate,
-      totalActivities: currentStreak ? currentStreak.totalActivities + 1 : 1,
-      updatedAt: new Date().toISOString()
+      lastActivityDate: activityDate,
+      totalActivities: currentStreak ? (currentStreak.totalActivities || 0) + 1 : 1,
+      updatedAt: new Date()
     };
 
     let updatedStreak;
@@ -90,7 +94,7 @@ export async function POST(request: NextRequest) {
         .insert(streakRecords)
         .values({
           ...streakData,
-          createdAt: new Date().toISOString()
+          createdAt: new Date()
         })
         .returning();
     }
@@ -138,22 +142,23 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     // Calculate streak status (active, at risk, broken)
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterdayStr = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     const streaksWithStatus = streaks.map(streak => {
       let status = 'broken';
-      if (streak.lastActivityDate === today) {
+      const lastActivityStr = streak.lastActivityDate ? streak.lastActivityDate.toISOString().split('T')[0] : null;
+      if (lastActivityStr === todayStr) {
         status = 'active';
-      } else if (streak.lastActivityDate === yesterday) {
+      } else if (lastActivityStr === yesterdayStr) {
         status = 'at_risk';
       }
 
       return {
         ...streak,
         status,
-        nextMilestone: getNextMilestone(streak.currentStreak),
-        progressToNext: getProgressToNextMilestone(streak.currentStreak)
+        nextMilestone: getNextMilestone(streak.currentStreak || 0),
+        progressToNext: getProgressToNextMilestone(streak.currentStreak || 0)
       };
     });
 
@@ -166,8 +171,8 @@ export async function GET(request: NextRequest) {
       history?: {
         date: string;
         streakType: string;
-        currentStreak: number;
-        longestStreak: number;
+        currentStreak: number | null;
+        longestStreak: number | null;
       }[];
     } = {
       streaks: streaksWithStatus,
@@ -177,7 +182,7 @@ export async function GET(request: NextRequest) {
     // Include history if requested
     if (includeHistory) {
       const history = await getStreakHistory(userId, streakType);
-      response.history = history;
+      response.history = history.map(h => ({ ...h, date: h.date.toISOString() }));
     }
 
     return NextResponse.json(response);
@@ -221,12 +226,12 @@ export async function PUT(request: NextRequest) {
     }
 
     let updateData: {
-      updatedAt: string;
+      updatedAt: Date;
       currentStreak?: number;
       longestStreak?: number;
       totalActivities?: number;
     } = {
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date()
     };
 
     switch (resetType) {
@@ -234,7 +239,7 @@ export async function PUT(request: NextRequest) {
         updateData.currentStreak = 0;
         break;
       case 'longest':
-        updateData.longestStreak = existingStreak.currentStreak;
+        updateData.longestStreak = existingStreak.currentStreak || 0;
         break;
       case 'all':
         updateData.currentStreak = 0;
@@ -294,18 +299,18 @@ async function createMilestoneNotification(userId: string, streakType: string, s
       : `Great job! You've maintained your ${label.toLowerCase()} streak for ${streakCount} days. You're building healthy habits!`;
 
     await db.insert(healthNotifications).values({
+      id: crypto.randomUUID(),
       userId,
       notificationType: 'streak_milestone',
       title,
       message,
-      triggerCondition: JSON.stringify({
+      triggerCondition: {
         streakType,
         streakCount,
         milestoneType,
         achievedAt: new Date().toISOString()
-      }),
-      priority: 'medium',
-      scheduledAt: new Date().toISOString()
+      },
+      scheduledAt: new Date()
     });
   } catch (error) {
     console.error('Error creating milestone notification:', error);
@@ -351,7 +356,7 @@ async function getStreakStatistics(userId: string) {
         totalStreaks: sql<number>`count(*)`,
         totalActivities: sql<number>`sum(${streakRecords.totalActivities})`,
         longestOverall: sql<number>`max(${streakRecords.longestStreak})`,
-        activeStreaks: sql<number>`count(case when ${streakRecords.lastActivityDate} >= ${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]} then 1 end)`
+        activeStreaks: sql<number>`count(case when ${streakRecords.lastActivityDate} >= ${new Date(Date.now() - 24 * 60 * 60 * 1000)} then 1 end)`
       })
       .from(streakRecords)
       .where(eq(streakRecords.userId, userId));

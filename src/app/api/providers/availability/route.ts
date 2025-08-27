@@ -94,23 +94,25 @@ export async function GET(request: NextRequest) {
     // Group by day of week for regular schedule
     const regularSchedule = availability
       .reduce((acc, slot) => {
-        if (!acc[slot.dayOfWeek]) {
-          acc[slot.dayOfWeek] = [];
+        if (slot.dayOfWeek !== null) {
+          if (!acc[slot.dayOfWeek]) {
+            acc[slot.dayOfWeek] = [];
+          }
+          acc[slot.dayOfWeek].push({
+            id: slot.id.toString(),
+            startTime: slot.startTime,
+            endTime: slot.endTime ?? '',
+            isAvailable: slot.isActive ?? false,
+            timezone: slot.timezone,
+          });
         }
-        acc[slot.dayOfWeek].push({
-          id: slot.id,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          isAvailable: slot.isActive,
-          timezone: slot.timezone,
-        });
         return acc;
       }, {} as Record<number, {
         id: string;
         startTime: string;
         endTime: string;
         isAvailable: boolean;
-        timezone: string;
+        timezone: string | null;
       }[]>);
 
     // Note: This schema doesn't support specific date overrides
@@ -189,9 +191,19 @@ export async function POST(request: NextRequest) {
           eq(providerAvailability.providerId, validatedData.providerId),
           eq(providerAvailability.dayOfWeek, validatedData.dayOfWeek),
           // Check for time overlap
+          // (start1 < end2) and (end1 > start2)
+          lte(providerAvailability.startTime, validatedData.endTime),
+          gte(providerAvailability.endTime, validatedData.startTime)
         )
       )
       .execute();
+
+    if (overlapping.length > 0) {
+      return NextResponse.json(
+        { success: false, error: 'Availability slot overlaps with an existing one' },
+        { status: 409 }
+      );
+    }
 
     // Create availability slot
     const newAvailability = await db
@@ -300,6 +312,13 @@ export async function PUT(request: NextRequest) {
     const { id, ...updateData } = body;
 
     if (!id) {
+      const availabilityId = Number(id);
+      if (isNaN(availabilityId)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid availability ID' },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { success: false, error: 'Availability ID is required' },
         { status: 400 }
@@ -309,6 +328,8 @@ export async function PUT(request: NextRequest) {
     // Validate update data (partial)
     const partialSchema = availabilitySchema.partial().omit({ providerId: true });
     const validatedData = partialSchema.parse(updateData);
+
+    const cleanData = Object.fromEntries(Object.entries(validatedData).filter(([_, v]) => v !== undefined));
 
     // Check if availability slot exists
     const existingSlot = await db
@@ -368,6 +389,13 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
+      const availabilityId = Number(id);
+      if (isNaN(availabilityId)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid availability ID' },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { success: false, error: 'Availability ID is required' },
         { status: 400 }

@@ -220,7 +220,7 @@ export class NotificationScheduler {
         .where(
           and(
             eq(healthNotifications.emailSent, false),
-            lte(healthNotifications.createdAt, subHours(new Date(), 1).toISOString())
+            lte(healthNotifications.createdAt, subHours(new Date(), 1))
           )
         );
 

@@ -32,10 +32,10 @@ type DailyCheckin = {
   moodRating: number | null;
   energyLevel: number | null;
   sleepQuality: number | null;
-  sleepHours: number | null;
+  sleepHours: string | null;
   stressLevel: number | null;
   exerciseMinutes: number | null;
-  waterIntake: number | null;
+  waterIntake: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -108,6 +108,49 @@ type HealthPattern = {
   updatedAt: Date;
 };
 
+// Normalize DB select types to internal analysis types
+type DbHealthEvent = typeof healthEvents.$inferSelect;
+type DbDailyCheckin = typeof dailyCheckins.$inferSelect;
+
+function normalizeHealthEvent(row: DbHealthEvent): HealthEvent {
+  return {
+    id: row.id,
+    userId: row.userId,
+    eventType: row.eventType,
+    title: row.title,
+    description: row.description ?? null,
+    severity: row.severity ?? null,
+    startDate: row.startDate instanceof Date ? row.startDate : new Date(row.startDate as any),
+    endDate: row.endDate ? (row.endDate instanceof Date ? row.endDate : new Date(row.endDate as any)) : null,
+    isOngoing: !!row.isOngoing,
+    frequency: row.frequency ?? null,
+    dosage: row.dosage ?? null,
+    unit: row.unit ?? null,
+    tags: row.tags ?? null,
+    metadata: row.metadata ?? null,
+    createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt as any),
+    updatedAt: row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt as any),
+  };
+}
+
+function normalizeDailyCheckin(row: DbDailyCheckin): DailyCheckin {
+  return {
+    id: row.id,
+    userId: row.userId,
+    checkinDate: row.checkinDate instanceof Date ? row.checkinDate : new Date(row.checkinDate as any),
+    moodRating: row.moodRating ?? null,
+    energyLevel: row.energyLevel ?? null,
+    sleepQuality: row.sleepQuality ?? null,
+    sleepHours: row.sleepHours != null ? String(row.sleepHours) : null,
+    stressLevel: row.stressLevel ?? null,
+    exerciseMinutes: row.exerciseMinutes ?? null,
+    waterIntake: row.waterIntake != null ? String(row.waterIntake) : null,
+    notes: row.notes ?? null,
+    createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt as any),
+    updatedAt: row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt as any),
+  };
+}
+
 const patternAnalysisSchema = z.object({
   timeframe: z.enum(['week', 'month', 'quarter', 'year']).default('month'),
   eventTypes: z.array(z.string()).optional(),
@@ -148,16 +191,18 @@ export async function POST(request: NextRequest) {
       eventConditions.push(sql`${healthEvents.eventType} = ANY(${validatedData.eventTypes})`);
     }
 
-    const events = await db
+    const eventRows = await db
       .select()
       .from(healthEvents)
       .where(and(...eventConditions))
       .orderBy(desc(healthEvents.startDate));
 
+    const events: HealthEvent[] = eventRows.map(normalizeHealthEvent);
+
     // Fetch daily check-ins if requested
     let checkins: DailyCheckin[] = [];
     if (validatedData.includeCheckins) {
-      checkins = await db
+      const checkinRows = await db
         .select()
         .from(dailyCheckins)
         .where(
@@ -167,6 +212,8 @@ export async function POST(request: NextRequest) {
           )
         )
         .orderBy(desc(dailyCheckins.checkinDate));
+
+      checkins = checkinRows.map(normalizeDailyCheckin);
     }
 
     // Perform analysis based on type
@@ -219,35 +266,41 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    let whereConditions = [eq(healthPatterns.userId, userId)];
+    const whereClauses = [eq(healthPatterns.userId, userId)];
     if (patternType) {
-      whereConditions.push(eq(healthPatterns.patternType, patternType));
+      whereClauses.push(eq(healthPatterns.patternType, patternType));
     }
 
-    const patterns = await db
+    const rows = await db
       .select()
       .from(healthPatterns)
-      .where(and(...whereConditions))
+      .where(and(...whereClauses))
       .orderBy(desc(healthPatterns.createdAt))
       .limit(limit)
       .offset(offset);
 
-    // Parse JSON fields
-    const patternsWithParsedData = patterns.map(pattern => ({
-      ...pattern,
-      dataPoints: typeof pattern.dataPoints === 'string' ? JSON.parse(pattern.dataPoints) : pattern.dataPoints || {},
-      correlations: typeof pattern.correlations === 'string' ? JSON.parse(pattern.correlations) : pattern.correlations || {},
-      insights: typeof pattern.insights === 'string' ? JSON.parse(pattern.insights) : pattern.insights || [],
-      recommendations: typeof pattern.recommendations === 'string' ? JSON.parse(pattern.recommendations) : pattern.recommendations || []
+    const patterns = rows.map((p) => ({
+      id: p.id,
+      userId: p.userId,
+      patternType: p.patternType,
+      title: p.title,
+      description: p.description,
+      confidenceScore: p.confidenceScore != null ? String(p.confidenceScore) : '0',
+      dataPoints: typeof p.dataPoints === 'string' ? JSON.parse(p.dataPoints) : p.dataPoints,
+      correlations: typeof p.correlations === 'string' ? JSON.parse(p.correlations) : p.correlations,
+      insights: typeof p.insights === 'string' ? JSON.parse(p.insights) : p.insights,
+      recommendations: typeof p.recommendations === 'string' ? JSON.parse(p.recommendations) : p.recommendations,
+      periodStart: p.periodStart instanceof Date ? p.periodStart : new Date(p.periodStart as any),
+      periodEnd: p.periodEnd instanceof Date ? p.periodEnd : new Date(p.periodEnd as any),
+      isActive: !!p.isActive,
+      createdAt: p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt as any),
+      updatedAt: p.updatedAt instanceof Date ? p.updatedAt : new Date(p.updatedAt as any),
     }));
 
-    return NextResponse.json({ patterns: patternsWithParsedData });
+    return NextResponse.json({ success: true, patterns });
   } catch (error) {
     console.error('Error fetching health patterns:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch health patterns' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch health patterns' }, { status: 500 });
   }
 }
 
@@ -260,32 +313,31 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedData = createPatternSchema.parse(body);
+    const validated = createPatternSchema.parse(body);
 
-    const [newPattern] = await db
+    const inserted = await db
       .insert(healthPatterns)
       .values({
         userId,
-        patternType: validatedData.patternType,
-        title: validatedData.title,
-        description: validatedData.description,
-        confidenceScore: validatedData.confidenceScore.toString(),
-        periodStart: new Date(validatedData.periodStart),
-        periodEnd: new Date(validatedData.periodEnd),
-        dataPoints: validatedData.dataPoints || {},
-        correlations: validatedData.correlations || {},
-        insights: validatedData.insights || [],
-        recommendations: validatedData.recommendations || [],
+        patternType: validated.patternType,
+        title: validated.title,
+        description: validated.description,
+        confidenceScore: String(validated.confidenceScore),
+        dataPoints: validated.dataPoints,
+        correlations: validated.correlations ?? {},
+        insights: validated.insights,
+        recommendations: validated.recommendations ?? [],
+        periodStart: new Date(validated.periodStart),
+        periodEnd: new Date(validated.periodEnd),
       })
       .returning();
 
-    return NextResponse.json({ success: true, pattern: newPattern });
+    const saved = inserted[0];
+
+    return NextResponse.json({ success: true, pattern: saved });
   } catch (error) {
     console.error('Error saving health pattern:', error);
-    return NextResponse.json(
-      { error: 'Failed to save health pattern' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to save health pattern' }, { status: 500 });
   }
 }
 

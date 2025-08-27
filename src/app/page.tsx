@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import AuthLoadingSpinner from '@/components/AuthLoadingSpinner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Star, Users, Clock, Shield, Heart, Brain, Activity, Stethoscope, UserCheck, Smartphone, FileText, Lock, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
+
+
+
 import FeatureCard from '@/components/FeatureCard';
 import ProcessStep from '@/components/ProcessStep';
 import Testimonial from '@/components/Testimonial';

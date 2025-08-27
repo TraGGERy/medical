@@ -73,17 +73,17 @@ export class EmailNotificationService {
         title: healthEvents.title,
         description: healthEvents.description,
         severity: healthEvents.severity,
-        eventDate: healthEvents.eventDate,
+        startDate: healthEvents.startDate,
         createdAt: healthEvents.createdAt
       })
       .from(healthEvents)
       .where(
         and(
           eq(healthEvents.eventType, 'symptom'),
-          gte(healthEvents.eventDate, format(subDays(today, 7), 'yyyy-MM-dd'))
+          gte(healthEvents.startDate, subDays(today, 7))
         )
       )
-      .orderBy(desc(healthEvents.eventDate));
+      .orderBy(desc(healthEvents.startDate));
 
     // Group events by user and symptom
     const groupedEvents = new Map<string, Map<string, typeof recentEvents>>();
@@ -125,7 +125,13 @@ export class EmailNotificationService {
       const userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User';
       
       for (const [symptom, events] of userSymptoms) {
-        const consecutiveDays = this.checkConsecutiveDays(events, 5);
+        const consecutiveDays = this.checkConsecutiveDays(events.map(e => ({
+          ...e,
+          startDate: e.startDate.toISOString()
+        })).map(e => ({
+          ...e,
+          startDate: e.startDate
+        })), 5);
         
         if (consecutiveDays.length >= 5) {
           // Check if we've already sent a notification for this symptom recently
@@ -145,12 +151,13 @@ export class EmailNotificationService {
               symptom,
               dayCount: consecutiveDays.length,
               severity: avgSeverity,
-              firstOccurrence: consecutiveDays[consecutiveDays.length - 1].eventDate,
-              lastOccurrence: consecutiveDays[0].eventDate,
+              firstOccurrence: consecutiveDays[consecutiveDays.length - 1].startDate,
+              lastOccurrence: consecutiveDays[0].startDate,
               occurrences: consecutiveDays.map(e => ({
-                date: e.eventDate,
+
+                date: e.startDate,
                 severity: e.severity || 0,
-                description: e.description || undefined
+                description: typeof e.description === 'string' ? e.description : undefined
               }))
             });
           }
@@ -164,19 +171,19 @@ export class EmailNotificationService {
   /**
    * Check if events represent consecutive days
    */
-  private checkConsecutiveDays(events: { eventDate: string; [key: string]: unknown }[], minDays: number): { eventDate: string; [key: string]: unknown }[] {
+  private checkConsecutiveDays(events: { startDate: string; severity: number | null; [key: string]: unknown }[], minDays: number): { startDate: string; severity: number | null; [key: string]: unknown }[] {
     if (events.length < minDays) return [];
     
     // Sort events by date (most recent first)
     const sortedEvents = events.sort((a, b) => 
-      new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime()
+      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
     );
     
     const consecutiveEvents = [sortedEvents[0]];
-    let currentDate = new Date(sortedEvents[0].eventDate);
+    let currentDate = new Date(sortedEvents[0].startDate);
     
     for (let i = 1; i < sortedEvents.length; i++) {
-      const eventDate = new Date(sortedEvents[i].eventDate);
+      const eventDate = new Date(sortedEvents[i].startDate);
       const expectedDate = subDays(currentDate, 1);
       
       // Check if this event is from the previous day
@@ -198,7 +205,7 @@ export class EmailNotificationService {
   private async hasRecentNotification(
     userId: string,
     symptom: string,
-    type: string
+    notificationType: string
   ): Promise<boolean> {
     const threeDaysAgo = subDays(new Date(), 3);
     
@@ -208,9 +215,9 @@ export class EmailNotificationService {
       .where(
         and(
           eq(healthNotifications.userId, userId),
-          eq(healthNotifications.type, type),
-          sql`${healthNotifications.metadata}->>'symptom' = ${symptom}`,
-          gte(healthNotifications.createdAt, threeDaysAgo.toISOString())
+          eq(healthNotifications.notificationType, notificationType),
+          sql`(trigger_condition->>'symptom') = ${symptom}`,
+          gte(healthNotifications.createdAt, threeDaysAgo)
         )
       )
       .limit(1);
@@ -239,24 +246,21 @@ export class EmailNotificationService {
       }
       
       // Log notification in database
-      await db.insert(healthNotifications).values({
-        id: crypto.randomUUID(),
+      await db.insert(healthNotifications).values([{
         userId: data.userId,
-        type: 'persistent_symptom',
+        notificationType: 'persistent_symptom',
         title: `Persistent ${data.symptom} Alert`,
         message: `You've reported ${data.symptom} for ${data.dayCount} consecutive days.`,
-        priority: data.severity >= 7 ? 'high' : data.severity >= 4 ? 'medium' : 'low',
-        emailSent: true,
-        emailSentAt: new Date().toISOString(),
-        metadata: {
+        triggerCondition: {
           symptom: data.symptom,
           dayCount: data.dayCount,
           severity: data.severity,
+          occurrences: data.occurrences,
           emailId: emailResult.data?.id
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+        emailSent: true,
+        sentAt: new Date()
+      }]);
       
       console.log(`Sent persistent symptom notification to ${data.userEmail} for ${data.symptom}`);
     } catch (error) {

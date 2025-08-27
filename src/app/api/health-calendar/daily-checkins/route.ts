@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       .where(
         and(
           eq(dailyCheckins.userId, userId),
-          eq(dailyCheckins.checkinDate, validatedData.checkinDate)
+          eq(dailyCheckins.checkinDate, new Date(validatedData.checkinDate))
         )
       )
       .limit(1);
@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
           moodRating: validatedData.moodRating,
           energyLevel: validatedData.energyLevel,
           sleepQuality: validatedData.sleepQuality,
-          sleepHours: validatedData.sleepHours,
+          sleepHours: validatedData.sleepHours !== undefined ? validatedData.sleepHours.toString() : undefined,
           stressLevel: validatedData.stressLevel,
           exerciseMinutes: validatedData.exerciseMinutes,
-          waterIntake: validatedData.waterIntake,
+          waterIntake: validatedData.waterIntake !== undefined ? validatedData.waterIntake.toString() : undefined,
           notes: validatedData.notes,
           updatedAt: new Date()
         })
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         .insert(dailyCheckins)
         .values({
           userId,
-          checkinDate: validatedData.checkinDate,
+          checkinDate: new Date(validatedData.checkinDate),
           moodRating: validatedData.moodRating,
           energyLevel: validatedData.energyLevel,
           sleepQuality: validatedData.sleepQuality,
