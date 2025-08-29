@@ -121,29 +121,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   const [showQuickResponseDialog, setShowQuickResponseDialog] = useState(false);
   const [pendingQuickMessage, setPendingQuickMessage] = useState<{ content: string; responseTime: number } | null>(null);
   
-  const askInitialHealthQuestions = useCallback(() => {
-    const questions = [
-      "To get started, could you please describe the main reason for your visit today?",
-      "What symptoms are you experiencing? Please be as detailed as possible.",
-      "On a scale of 1 to 10, how would you rate the urgency of your condition?",
-      "Is there anything else you think I should know about your current health situation?"
-    ];
 
-    questions.forEach((question, index) => {
-      setTimeout(() => {
-        const newMessage: Message = {
-          id: `sys-q-${index}-${Date.now()}`,
-          consultationId: consultationId,
-          senderId: 'system',
-          senderType: 'system',
-          content: question,
-          messageType: 'text',
-          createdAt: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, newMessage]);
-      }, index * 1500);
-    });
-  }, [consultationId]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

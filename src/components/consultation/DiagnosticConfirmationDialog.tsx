@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/Card';
-import { CheckCircle, Clock, AlertCircle, FileText, Download } from 'lucide-react';
+import { CheckCircle, AlertCircle, FileText, Download } from 'lucide-react';
 import { DiagnosticTriggerResult } from '@/lib/services/diagnosticCompletenessDetector';
 
 interface DiagnosticConfirmationDialogProps {

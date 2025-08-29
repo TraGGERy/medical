@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { healthcareProviders, providerSpecialties, telemedicineAppointments, users } from '@/lib/db/schema';
+import { healthcareProviders, telemedicineAppointments, users } from '@/lib/db/schema';
 import { eq, and, count } from 'drizzle-orm';
 import { z } from 'zod';
 

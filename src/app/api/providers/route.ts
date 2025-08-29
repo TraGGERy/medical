@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { healthcareProviders, providerSpecialties, users } from '@/lib/db/schema';
+import { healthcareProviders, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 
 // Validation schema for provider registration
