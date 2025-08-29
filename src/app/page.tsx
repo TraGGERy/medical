@@ -101,7 +101,7 @@ export default function HomePage() {
                   size="lg"
                   className="animate-pulse-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto bg-green-600 hover:bg-green-700"
                 >
-                  📞 Book Virtual Consultation
+                  📞 Book Virtual Consultations
                 </Button>
                 <Button 
                   onClick={handleHealthCheck}
