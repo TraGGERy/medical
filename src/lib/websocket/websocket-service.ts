@@ -1,3 +1,4 @@
+import React from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@clerk/nextjs';
 
@@ -268,7 +269,7 @@ export function useWebSocket(callbacks?: WebSocketCallbacks) {
     return () => {
       webSocketService.disconnect();
     };
-  }, [userId, getToken]);
+  }, [userId, getToken, callbacks]);
 
   return {
     connectionState,
@@ -278,6 +279,3 @@ export function useWebSocket(callbacks?: WebSocketCallbacks) {
     service: webSocketService
   };
 }
-
-// Import React for the hook
-import React from 'react';

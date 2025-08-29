@@ -12,24 +12,19 @@ import {
   User, 
   Star,
   MoreVertical,
-  Edit,
-  Trash2,
   FileText,
   Download,
-  Filter,
   Search,
   Loader2,
-  MapPin,
-  ChevronDown
+  MapPin
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
 import AppointmentBooking from './AppointmentBooking';
+import Image from 'next/image';
 
-interface Provider {
+export interface Provider {
   id: string;
   name: string;
   specialty: string;
@@ -37,7 +32,7 @@ interface Provider {
   rating?: number;
 }
 
-interface Appointment {
+export interface Appointment {
   id: string;
   providerId: string;
   provider?: Provider;
@@ -109,59 +104,6 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
     fetchAppointments();
   }, [isLoaded, isSignedIn, user]);
 
-  // Mock data for fallback (remove this when API is ready)
-  const mockAppointments = [
-    {
-      id: 1,
-      provider: {
-        name: 'Dr. Sarah Johnson',
-        specialty: 'General Medicine',
-        avatar: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=professional%20female%20doctor%20headshot%20medical%20uniform&image_size=square',
-        rating: 4.9
-      },
-      date: '2024-01-15',
-      time: '2:00 PM',
-      type: 'video',
-      status: 'upcoming',
-      reason: 'Annual checkup and blood pressure monitoring',
-      duration: 30,
-      notes: 'Please bring your current medications list'
-    },
-    {
-      id: 2,
-      provider: {
-        name: 'Dr. Michael Chen',
-        specialty: 'Cardiology',
-        avatar: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=professional%20male%20doctor%20headshot%20medical%20uniform&image_size=square',
-        rating: 4.8
-      },
-      date: '2024-01-12',
-      time: '10:00 AM',
-      type: 'video',
-      status: 'completed',
-      reason: 'Follow-up for heart palpitations',
-      duration: 45,
-      prescription: 'Beta-blocker medication prescribed',
-      report: 'Consultation_Report_Jan12.pdf'
-    },
-    {
-      id: 3,
-      provider: {
-        name: 'Dr. Emily Rodriguez',
-        specialty: 'Dermatology',
-        avatar: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=professional%20female%20doctor%20headshot%20medical%20uniform&image_size=square',
-        rating: 4.9
-      },
-      date: '2024-01-18',
-      time: '4:30 PM',
-      type: 'phone',
-      status: 'upcoming',
-      reason: 'Skin rash consultation',
-      duration: 20,
-      notes: 'Please have photos of affected area ready'
-    }
-  ];
-
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'video': return Video;
@@ -201,7 +143,7 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
    const completedCount = appointments.filter(a => a.status === 'completed').length;
 
    // Handler functions for appointment actions
-   const handleReschedule = async (appointmentId: string) => {
+   const handleReschedule = async () => {
      // TODO: Implement reschedule functionality
      toast.info('Reschedule functionality coming soon');
    };
@@ -233,17 +175,17 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
      }
    };
 
-   const handleDownloadReport = (appointmentId: string) => {
+   const handleDownloadReport = () => {
      // TODO: Implement report download
      toast.info('Report download functionality coming soon');
    };
 
-   const handleRateProvider = (providerId: string) => {
+   const handleRateProvider = () => {
      // TODO: Implement provider rating
      toast.info('Provider rating functionality coming soon');
    };
 
-   const handleMessageProvider = (providerId: string) => {
+   const handleMessageProvider = () => {
      // TODO: Implement provider messaging
      toast.info('Provider messaging functionality coming soon');
    };
@@ -411,7 +353,7 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
                 key={filterOption}
                 variant={filter === filterOption ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFilter(filterOption as any)}
+                onClick={() => setFilter(filterOption as 'all' | 'upcoming' | 'completed' | 'cancelled')}
                 className="capitalize"
               >
                 {filterOption}
@@ -446,9 +388,11 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
               <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4 flex-1">
-                    <img 
+                    <Image 
                       src={appointment.provider?.image || '/default-doctor.png'} 
                       alt={appointment.provider?.name || 'Doctor'}
+                      width={48}
+                      height={48}
                       className="w-12 h-12 rounded-full object-cover"
                     />
                     
@@ -514,7 +458,7 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
                         <Button 
                            size="sm" 
                            variant="outline"
-                           onClick={() => handleReschedule(appointment.id)}
+                           onClick={() => handleReschedule()}
                          >
                            <Calendar className="w-4 h-4 mr-1" />
                            Reschedule
@@ -535,7 +479,7 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
                         <Button 
                            size="sm" 
                            variant="outline"
-                           onClick={() => handleDownloadReport(appointment.id)}
+                           onClick={() => handleDownloadReport()}
                          >
                            <Download className="w-4 h-4 mr-1" />
                            Report
@@ -543,7 +487,7 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
                          <Button 
                            size="sm" 
                            variant="outline"
-                           onClick={() => handleRateProvider(appointment.providerId)}
+                           onClick={() => handleRateProvider()}
                          >
                            <Star className="w-4 h-4 mr-1" />
                            Rate
@@ -551,7 +495,7 @@ const MyAppointments: React.FC<MyAppointmentsProps> = ({ onResumeChat }) => {
                          <Button 
                            size="sm" 
                            variant="outline"
-                           onClick={() => handleMessageProvider(appointment.providerId)}
+                           onClick={() => handleMessageProvider()}
                          >
                            <MessageSquare className="w-4 h-4 mr-1" />
                            Message

@@ -7,36 +7,46 @@ import {
   Video, 
   Calendar, 
   Clock, 
-  Users, 
   MessageSquare, 
   FileText,
   Shield,
-  Zap,
   Loader2
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
+import { Appointment } from './MyAppointments';
+
+interface ApiAppointment {
+  id: string;
+  providerId: string;
+  patientId: string;
+  appointmentDate: string;
+  duration: number;
+  appointmentType: string;
+  status: string;
+  symptoms: string[];
+  notes: string | null;
+  meetingUrl: string | null;
+  totalCost: number | null;
+  createdAt: string;
+  updatedAt: string;
+  providerFirstName: string;
+  providerLastName: string;
+  providerSpecialization: string;
+}
 
 interface TelemedicineOverviewProps {
   onBookAppointment: () => void;
   bookingLoading?: boolean;
 }
 
-interface Appointment {
-  id: string;
-  providerId: string;
-  provider?: {
-    name: string;
-    specialty: string;
-  };
-  appointmentDate: string;
-  appointmentTime: string;
-  status: string;
-  appointmentType: string;
+interface StatData {
+  label: string;
+  value: string;
+  change: string;
 }
 
-const TelemedicineOverview: React.FC<TelemedicineOverviewProps> = ({ onBookAppointment, bookingLoading = false }) => {
+const TelemedicineOverview: React.FC<TelemedicineOverviewProps> = ({ onBookAppointment, bookingLoading }) => {
   const { user, isLoaded, isSignedIn } = useUser();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,25 +81,33 @@ const TelemedicineOverview: React.FC<TelemedicineOverviewProps> = ({ onBookAppoi
         }
 
         const data = await response.json();
-        const appointmentList = data.appointments || [];
-        setAppointments(appointmentList);
-
-        // Calculate stats
-        const upcomingAppointments = appointmentList.filter((apt: Appointment) => 
-          ['scheduled', 'confirmed'].includes(apt.status)
-        );
-        const completedAppointments = appointmentList.filter((apt: Appointment) => 
-          apt.status === 'completed'
-        );
-
-        setStats({
-          total: appointmentList.length,
-          upcoming: upcomingAppointments.length,
-          providers: 5, // This could be fetched from providers API
-          avgRating: 4.8 // This could be calculated from reviews
+        const transformedAppointments: Appointment[] = (data.data || []).map((apt: ApiAppointment) => {
+          const scheduledAt = new Date(apt.appointmentDate);
+          return {
+            id: apt.id,
+            providerId: apt.providerId,
+            patientId: apt.patientId,
+            appointmentDate: scheduledAt.toISOString().split('T')[0],
+            appointmentTime: scheduledAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+            duration: apt.duration,
+            appointmentType: apt.appointmentType as 'video' | 'phone' | 'in-person',
+            status: apt.status as 'scheduled' | 'confirmed' | 'in-progress' | 'completed' | 'cancelled' | 'no-show',
+            symptoms: Array.isArray(apt.symptoms) ? apt.symptoms.join(', ') : apt.symptoms,
+            notes: apt.notes,
+            meetingUrl: apt.meetingUrl,
+            totalCost: apt.totalCost || 0,
+            createdAt: apt.createdAt,
+            updatedAt: apt.updatedAt,
+            provider: {
+              id: apt.providerId,
+              name: `${apt.providerFirstName || ''} ${apt.providerLastName || ''}`.trim(),
+              specialty: apt.providerSpecialization || '',
+            }
+          };
         });
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
+        setAppointments(transformedAppointments);
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
         // Set default stats on error
         setStats({ total: 0, upcoming: 0, providers: 5, avgRating: 4.8 });
       } finally {
@@ -128,7 +146,7 @@ const TelemedicineOverview: React.FC<TelemedicineOverviewProps> = ({ onBookAppoi
   ];
 
   // Get next upcoming appointment for display
-  const nextAppointment = appointments
+  const nextAppointment: Appointment | undefined = appointments
     .filter(apt => ['scheduled', 'confirmed'].includes(apt.status))
     .sort((a, b) => new Date(a.appointmentDate + ' ' + a.appointmentTime).getTime() - 
                    new Date(b.appointmentDate + ' ' + b.appointmentTime).getTime())[0];
@@ -149,7 +167,7 @@ const TelemedicineOverview: React.FC<TelemedicineOverviewProps> = ({ onBookAppoi
     }
   };
 
-  const statsData = [
+  const statsData: StatData[] = [
     { 
       label: 'Total Appointments', 
       value: stats.total.toString(), 
@@ -318,8 +336,8 @@ const TelemedicineOverview: React.FC<TelemedicineOverviewProps> = ({ onBookAppoi
             appointments
               .sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime())
               .slice(0, 3)
-              .map((appointment, index) => {
-                const getActivityIcon = () => {
+              .map((appointment) => {
+                const getActivityIcon = (): { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; color: string } => {
                   if (appointment.status === 'completed') return { icon: Video, color: 'bg-green-500' };
                   if (appointment.status === 'cancelled') return { icon: Calendar, color: 'bg-red-500' };
                   return { icon: Calendar, color: 'bg-blue-500' };

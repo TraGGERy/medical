@@ -200,7 +200,7 @@ const DailyCheckinForm: React.FC<DailyCheckinFormProps> = ({
         throw new Error('Failed to save check-in');
       }
 
-      const result = await response.json();
+      await response.json();
       
       toast.success(existingCheckin ? 'Check-in updated successfully!' : 'Check-in saved successfully!');
       
@@ -528,7 +528,7 @@ const DailyCheckinForm: React.FC<DailyCheckinFormProps> = ({
               <textarea
                 value={formData.notes || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Any additional notes about your day, how you're feeling, or observations..."
+                placeholder="Any additional notes about your day, how you&apos;re feeling, or observations..."
                 rows={4}
                 className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm sm:text-base"
               />

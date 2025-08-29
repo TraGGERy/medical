@@ -13,30 +13,35 @@ const Card = ({ children, className = '' }: CardProps) => (
     {children}
   </div>
 );
+Card.displayName = 'Card';
 
 const CardHeader = ({ children, className = '' }: CardProps) => (
   <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>
     {children}
   </div>
 );
+CardHeader.displayName = 'CardHeader';
 
 const CardTitle = ({ children, className = '' }: CardProps) => (
   <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`}>
     {children}
   </h3>
 );
+CardTitle.displayName = 'CardTitle';
 
 const CardDescription = ({ children, className = '' }: CardProps) => (
   <p className={`text-sm text-muted-foreground ${className}`}>
     {children}
   </p>
 );
+CardDescription.displayName = 'CardDescription';
 
 const CardContent = ({ children, className = '' }: CardProps) => (
   <div className={`p-6 pt-0 ${className}`}>
     {children}
   </div>
 );
+CardContent.displayName = 'CardContent';
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -70,6 +75,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'default', size
     </button>
   );
 };
+Button.displayName = 'Button';
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -91,6 +97,7 @@ const Badge = ({ children, variant = 'default', className = '' }: BadgeProps) =>
     </div>
   );
 };
+Badge.displayName = 'Badge';
 
 interface TextareaProps {
   id?: string;
@@ -111,6 +118,7 @@ const Textarea = ({ id, value, onChange, placeholder, className = '', disabled =
     className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
   />
 );
+Textarea.displayName = 'Textarea';
 
 interface InputProps {
   id?: string;
@@ -133,6 +141,7 @@ const Input = ({ id, type = 'text', value, onChange, placeholder, className = ''
     className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
   />
 );
+Input.displayName = 'Input';
 
 interface LabelProps {
   htmlFor?: string;
@@ -148,6 +157,7 @@ const Label = ({ htmlFor, children, className = '' }: LabelProps) => (
     {children}
   </label>
 );
+Label.displayName = 'Label';
 
 interface SelectProps {
   value: string;
@@ -162,7 +172,7 @@ const Select = ({ value, onValueChange, children }: SelectProps) => {
     <div className="relative">
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement<any>, {
+          return React.cloneElement(child, {
             value,
             onValueChange,
             isOpen,
@@ -174,6 +184,7 @@ const Select = ({ value, onValueChange, children }: SelectProps) => {
     </div>
   );
 };
+Select.displayName = 'Select';
 
 interface SelectTriggerProps {
   children: React.ReactNode;
@@ -195,10 +206,12 @@ const SelectTrigger = ({ children, className = '', value, isOpen, setIsOpen }: S
     </svg>
   </button>
 );
+SelectTrigger.displayName = 'SelectTrigger';
 
 const SelectValueDisplay = ({ placeholder }: { placeholder?: string }) => (
   <span className="text-muted-foreground">{placeholder}</span>
 );
+SelectValueDisplay.displayName = 'SelectValueDisplay';
 
 interface SelectContentProps {
   children: React.ReactNode;
@@ -215,7 +228,7 @@ const SelectContentWrapper = ({ children, isOpen, setIsOpen, onValueChange }: Se
       <div className="p-1">
         {React.Children.map(children, child => {
           if (React.isValidElement(child)) {
-            return React.cloneElement(child as React.ReactElement<any>, {
+            return React.cloneElement(child, {
               onValueChange,
               setIsOpen
             });
@@ -226,6 +239,7 @@ const SelectContentWrapper = ({ children, isOpen, setIsOpen, onValueChange }: Se
     </div>
   );
 };
+SelectContentWrapper.displayName = 'SelectContentWrapper';
 
 interface SelectItemProps {
   value: string;
@@ -245,10 +259,12 @@ const SelectItemFirst = ({ value, children, onValueChange, setIsOpen }: SelectIt
     {children}
   </div>
 );
+SelectItemFirst.displayName = 'SelectItemFirst';
 
 const Separator = ({ className = '' }: { className?: string }) => (
   <div className={`shrink-0 bg-border h-[1px] w-full ${className}`} />
 );
+Separator.displayName = 'Separator';
 
 interface SelectContentProps {
   children: React.ReactNode;
@@ -265,7 +281,7 @@ const SelectContent = ({ children, value, onValueChange, isOpen, setIsOpen }: Se
     <div className="absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95">
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement<any>, {
+          return React.cloneElement(child, {
             onValueChange,
             setIsOpen
           });
@@ -275,6 +291,7 @@ const SelectContent = ({ children, value, onValueChange, isOpen, setIsOpen }: Se
     </div>
   );
 };
+SelectContent.displayName = 'SelectContent';
 
 interface SelectItemProps {
   value: string;
@@ -294,12 +311,14 @@ const SelectItem = ({ value, children, onValueChange, setIsOpen }: SelectItemPro
     {children}
   </div>
 );
+SelectItem.displayName = 'SelectItem';
 
 const SelectValue = ({ placeholder, value }: { placeholder?: string; value?: string }) => (
   <span className={value ? "" : "text-muted-foreground"}>
     {value || placeholder}
   </span>
 );
+SelectValue.displayName = 'SelectValue';
 import { 
   Star, 
   Clock, 
@@ -691,7 +710,7 @@ export default function AiProviderProfilePage() {
                     <Label htmlFor="reasonForVisit">Reason for Visit *</Label>
                     <Textarea
                       id="reasonForVisit"
-                      placeholder="Briefly describe why you're seeking consultation..."
+                      placeholder="Briefly describe why you&apos;re seeking consultation..."
                       value={consultationForm.reasonForVisit}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConsultationForm(prev => ({ ...prev, reasonForVisit: e.target.value }))}
                       className="mt-1"

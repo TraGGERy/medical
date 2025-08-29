@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import AppointmentBooking from '@/components/telemedicine/AppointmentBooking';
 import Header from '@/components/Header';
 import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
 
 export default function BookAppointmentPage() {

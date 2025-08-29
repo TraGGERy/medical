@@ -272,8 +272,7 @@ Be conservative - only mark as complete if you're confident the consultation has
    * Fallback rule-based completion analysis
    */
   private fallbackCompletionAnalysis(
-    messages: Array<{senderType: string; content: string; timestamp: string}>,
-    _consultationContext: {reasonForVisit?: string; aiProviderSpecialty?: string; patientAge?: number; patientGender?: string}
+    messages: Array<{senderType: string; content: string; timestamp: string}>
   ): ConversationCompletionAnalysis {
     const completeness = this.dataCollector.checkCompleteness();
     const conversationDuration = Date.now() - this.conversationStartTime;
@@ -307,32 +306,8 @@ Be conservative - only mark as complete if you're confident the consultation has
   /**
    * Generate user notification message
    */
-  private generateUserNotification(analysis: ConversationCompletionAnalysis): string {
+  private generateUserNotification(): string {
     return `Thank you for providing detailed information about your symptoms. Based on our conversation, I have gathered sufficient information to generate a comprehensive diagnostic report. Please wait while I analyze all the information you've shared and prepare your personalized health assessment. This may take a few moments...`;
-  }
-
-  /**
-   * Detect explicit completion indicators in AI response
-   */
-  private detectExplicitCompletion(aiResponse: string): boolean {
-    // Primary trigger phrase for agentic completion
-    if (aiResponse.includes('[CONSULTATION_COMPLETE]')) {
-      return true;
-    }
-
-    // Fallback completion indicators
-    const completionIndicators = [
-      'consultation is complete',
-      'we have covered everything',
-      'comprehensive assessment complete',
-      'ready for diagnostic report',
-      'sufficient information gathered',
-      'consultation concluded'
-    ];
-
-    return completionIndicators.some(indicator => 
-      aiResponse.toLowerCase().includes(indicator.toLowerCase())
-    );
   }
 
   /**

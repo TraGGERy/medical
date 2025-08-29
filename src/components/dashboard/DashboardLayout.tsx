@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
   Plus, 
-  History, 
   Bot, 
   User, 
   Shield, 
@@ -22,8 +21,6 @@ import {
   Video,
   Calendar,
   Clock,
-  Stethoscope,
-  MessageSquare,
   MessageCircle,
   FileText
 } from 'lucide-react';
@@ -33,10 +30,9 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
   activeTab: string;
   onTabChange: (tab: string) => void;
-  activeConsultationId?: string;
 }
 
-export default function DashboardLayout({ children, activeTab, onTabChange, activeConsultationId }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, activeTab, onTabChange }: DashboardLayoutProps) {
   const router = useRouter();
   const { user } = useUser();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

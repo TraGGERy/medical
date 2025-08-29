@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -141,7 +141,7 @@ export default function ProviderRegistration() {
         throw new Error('Registration failed');
       }
 
-      const result = await response.json();
+      await response.json();
       toast.success('Registration submitted successfully! We will review your application and contact you soon.');
       
       // Reset form

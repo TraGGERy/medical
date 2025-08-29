@@ -1,8 +1,8 @@
 import { Resend } from 'resend';
 import { db } from '@/lib/db';
 import { healthEvents, healthNotifications, users } from '@/lib/db/schema';
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { eq, and, gte, desc, sql } from 'drizzle-orm';
+import { format, subDays } from 'date-fns';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -62,7 +62,6 @@ export class EmailNotificationService {
    * Find symptoms that have persisted for 5+ consecutive days
    */
   private async findPersistentSymptoms(): Promise<NotificationData[]> {
-    const fiveDaysAgo = subDays(new Date(), 5);
     const today = new Date();
     
     // Get all health events from the last 7 days (to account for gaps)

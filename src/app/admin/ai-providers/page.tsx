@@ -2,35 +2,40 @@
 
 import React, { useState, useEffect } from 'react';
 // Inline UI Components
-const Card = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+const Card = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: React.ReactNode | string; }) => (
   <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`} {...props}>
     {children}
   </div>
 )
+Card.displayName = 'Card';
 
-const CardHeader = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+const CardHeader = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: React.ReactNode | string; }) => (
   <div className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props}>
     {children}
   </div>
 )
+CardHeader.displayName = 'CardHeader';
 
-const CardTitle = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+const CardTitle = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: React.ReactNode | string; }) => (
   <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`} {...props}>
     {children}
   </h3>
 )
+CardTitle.displayName = 'CardTitle';
 
-const CardContent = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+const CardContent = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: React.ReactNode | string; }) => (
   <div className={`p-6 pt-0 ${className}`} {...props}>
     {children}
   </div>
 )
+CardContent.displayName = 'CardContent';
 
-const CardDescription = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+const CardDescription = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string; [key: string]: React.ReactNode | string; }) => (
   <p className={`text-sm text-muted-foreground ${className}`} {...props}>
     {children}
   </p>
 )
+CardDescription.displayName = 'CardDescription';
 
 const Button = ({ children, className = '', variant = 'default', size = 'default', disabled = false, onClick, type = 'button', ...props }: {
   children: React.ReactNode;
@@ -40,7 +45,7 @@ const Button = ({ children, className = '', variant = 'default', size = 'default
   disabled?: boolean;
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | boolean | (() => void) | undefined;
 }) => {
   const baseClasses = 'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50'
   const variantClasses = {
@@ -69,11 +74,12 @@ const Button = ({ children, className = '', variant = 'default', size = 'default
     </button>
   )
 }
+Button.displayName = 'Button';
 
 const Input = ({ className = '', type = 'text', ...props }: {
   className?: string;
   type?: string;
-  [key: string]: any;
+  [key: string]: string | undefined;
 }) => (
   <input
     type={type}
@@ -81,12 +87,13 @@ const Input = ({ className = '', type = 'text', ...props }: {
     {...props}
   />
 )
+Input.displayName = 'Input';
 
 const Badge = ({ children, className = '', variant = 'default', ...props }: {
   children: React.ReactNode;
   className?: string;
   variant?: 'default' | 'secondary' | 'destructive' | 'outline';
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => {
   const variantClasses = {
     default: 'bg-primary text-primary-foreground hover:bg-primary/80',
@@ -100,22 +107,24 @@ const Badge = ({ children, className = '', variant = 'default', ...props }: {
     </div>
   )
 }
+Badge.displayName = 'Badge';
 
 const Textarea = ({ className = '', ...props }: {
   className?: string;
-  [key: string]: any;
+  [key: string]: string | undefined;
 }) => (
   <textarea
     className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     {...props}
   />
 )
+Textarea.displayName = 'Textarea';
 
 const Label = ({ children, className = '', htmlFor, ...props }: {
   children: React.ReactNode;
   className?: string;
   htmlFor?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <label
     htmlFor={htmlFor}
@@ -125,12 +134,13 @@ const Label = ({ children, className = '', htmlFor, ...props }: {
     {children}
   </label>
 )
+Label.displayName = 'Label';
 
 const Select = ({ children, value, onValueChange, ...props }: {
   children: React.ReactNode;
   value?: string;
   onValueChange?: (value: string) => void;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | ((value: string) => void) | undefined;
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedValue, setSelectedValue] = useState(value || '')
@@ -150,20 +160,21 @@ const Select = ({ children, value, onValueChange, ...props }: {
             setIsOpen,
             selectedValue,
             onValueChange: handleValueChange
-          } as any)
+          })
         }
         return child
       })}
     </div>
   )
 }
+Select.displayName = 'Select';
 
 const SelectTrigger = ({ children, className = '', isOpen, setIsOpen, ...props }: {
   children: React.ReactNode;
   className?: string;
   isOpen?: boolean;
   setIsOpen?: (open: boolean) => void;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | boolean | ((open: boolean) => void) | undefined;
 }) => (
   <button
     type="button"
@@ -174,21 +185,23 @@ const SelectTrigger = ({ children, className = '', isOpen, setIsOpen, ...props }
     {children}
   </button>
 )
+SelectTrigger.displayName = 'SelectTrigger';
 
 const SelectValue = ({ placeholder = '', selectedValue, ...props }: {
   placeholder?: string;
   selectedValue?: string;
-  [key: string]: any;
+  [key: string]: string | undefined;
 }) => (
   <span {...props}>
     {selectedValue || placeholder}
   </span>
 )
+SelectValue.displayName = 'SelectValue';
 
 const SelectContent = ({ children, isOpen, ...props }: {
   children: React.ReactNode;
   isOpen?: boolean;
-  [key: string]: any;
+  [key: string]: React.ReactNode | boolean | undefined;
 }) => {
   if (!isOpen) return null
   
@@ -200,13 +213,14 @@ const SelectContent = ({ children, isOpen, ...props }: {
     </div>
   )
 }
+SelectContent.displayName = 'SelectContent';
 
 const SelectItem = ({ children, value, onValueChange, className = '', ...props }: {
   children: React.ReactNode;
   value: string;
   onValueChange?: (value: string) => void;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | ((value: string) => void) | undefined;
 }) => (
   <div
     className={`relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${className}`}
@@ -216,12 +230,13 @@ const SelectItem = ({ children, value, onValueChange, className = '', ...props }
     {children}
   </div>
 )
+SelectItem.displayName = 'SelectItem';
 
 const Switch = ({ checked, onCheckedChange, className = '', ...props }: {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | boolean | ((checked: boolean) => void) | undefined;
 }) => (
   <button
     type="button"
@@ -234,23 +249,25 @@ const Switch = ({ checked, onCheckedChange, className = '', ...props }: {
     <span className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
   </button>
 )
+Switch.displayName = 'Switch';
 
 const Separator = ({ className = '', orientation = 'horizontal', ...props }: {
   className?: string;
   orientation?: 'horizontal' | 'vertical';
-  [key: string]: any;
+  [key: string]: string | undefined;
 }) => (
   <div
     className={`shrink-0 bg-border ${orientation === 'horizontal' ? 'h-[1px] w-full' : 'h-full w-[1px]'} ${className}`}
     {...props}
   />
 )
+Separator.displayName = 'Separator';
 
 const Dialog = ({ children, open, onOpenChange, ...props }: {
   children: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  [key: string]: any;
+  [key: string]: React.ReactNode | boolean | ((open: boolean) => void) | undefined;
 }) => {
   const [isOpen, setIsOpen] = useState(open || false)
   
@@ -266,7 +283,7 @@ const Dialog = ({ children, open, onOpenChange, ...props }: {
           return React.cloneElement(child, {
             isOpen,
             onOpenChange: handleOpenChange
-          } as any)
+          })
         }
         return child
       })}
@@ -278,19 +295,20 @@ const DialogTrigger = ({ children, isOpen, onOpenChange, ...props }: {
   children: React.ReactNode;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  [key: string]: any;
+  [key: string]: React.ReactNode | boolean | ((open: boolean) => void) | undefined;
 }) => (
   <div onClick={() => onOpenChange?.(!isOpen)} {...props}>
     {children}
   </div>
 )
+DialogTrigger.displayName = 'DialogTrigger';
 
 const DialogContent = ({ children, isOpen, onOpenChange, className = '', ...props }: {
   children: React.ReactNode;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | boolean | string | ((open: boolean) => void) | undefined;
 }) => {
   if (!isOpen) return null
   
@@ -303,51 +321,56 @@ const DialogContent = ({ children, isOpen, onOpenChange, className = '', ...prop
     </div>
   )
 }
+DialogContent.displayName = 'DialogContent';
 
 const DialogHeader = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <div className={`flex flex-col space-y-1.5 text-center sm:text-left ${className}`} {...props}>
     {children}
   </div>
 )
+DialogHeader.displayName = 'DialogHeader';
 
 const DialogTitle = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <h2 className={`text-lg font-semibold leading-none tracking-tight ${className}`} {...props}>
     {children}
   </h2>
 )
+DialogTitle.displayName = 'DialogTitle';
 
 const DialogDescription = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <p className={`text-sm text-muted-foreground ${className}`} {...props}>
     {children}
   </p>
 )
+DialogDescription.displayName = 'DialogDescription';
 
 const DialogFooter = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <div className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 ${className}`} {...props}>
     {children}
   </div>
 )
+DialogFooter.displayName = 'DialogFooter';
 
 const Table = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <div className="relative w-full overflow-auto">
     <table className={`w-full caption-bottom text-sm ${className}`} {...props}>
@@ -355,60 +378,66 @@ const Table = ({ children, className = '', ...props }: {
     </table>
   </div>
 )
+Table.displayName = 'Table';
 
 const TableHeader = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <thead className={`[&_tr]:border-b ${className}`} {...props}>
     {children}
   </thead>
 )
+TableHeader.displayName = 'TableHeader';
 
 const TableBody = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <tbody className={`[&_tr:last-child]:border-0 ${className}`} {...props}>
     {children}
   </tbody>
 )
+TableBody.displayName = 'TableBody';
 
 const TableRow = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <tr className={`border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted ${className}`} {...props}>
     {children}
   </tr>
 )
+TableRow.displayName = 'TableRow';
 
 const TableHead = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <th className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 ${className}`} {...props}>
     {children}
   </th>
 )
+TableHead.displayName = 'TableHead';
 
 const TableCell = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <td className={`p-4 align-middle [&:has([role=checkbox])]:pr-0 ${className}`} {...props}>
     {children}
   </td>
 )
+TableCell.displayName = 'TableCell';
 
 const DropdownMenu = ({ children, ...props }: {
   children: React.ReactNode;
-  [key: string]: any;
+  [key: string]: React.ReactNode | undefined;
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   
@@ -419,30 +448,32 @@ const DropdownMenu = ({ children, ...props }: {
           return React.cloneElement(child, {
             isOpen,
             setIsOpen
-          } as any)
+          })
         }
         return child
       })}
     </div>
   )
 }
+DropdownMenu.displayName = 'DropdownMenu';
 
 const DropdownMenuTrigger = ({ children, isOpen, setIsOpen, ...props }: {
   children: React.ReactNode;
   isOpen?: boolean;
   setIsOpen?: (open: boolean) => void;
-  [key: string]: any;
+  [key: string]: React.ReactNode | boolean | ((open: boolean) => void) | undefined;
 }) => (
   <div onClick={() => setIsOpen?.(!isOpen)} {...props}>
     {children}
   </div>
 )
+DropdownMenuTrigger.displayName = 'DropdownMenuTrigger';
 
 const DropdownMenuContent = ({ children, isOpen, className = '', ...props }: {
   children: React.ReactNode;
   isOpen?: boolean;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | boolean | string | undefined;
 }) => {
   if (!isOpen) return null
   
@@ -452,22 +483,24 @@ const DropdownMenuContent = ({ children, isOpen, className = '', ...props }: {
     </div>
   )
 }
+DropdownMenuContent.displayName = 'DropdownMenuContent';
 
 const DropdownMenuLabel = ({ children, className = '', ...props }: {
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | undefined;
 }) => (
   <div className={`px-2 py-1.5 text-sm font-semibold ${className}`} {...props}>
     {children}
   </div>
 )
+DropdownMenuLabel.displayName = 'DropdownMenuLabel';
 
 const DropdownMenuItem = ({ children, className = '', onClick, ...props }: {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | (() => void) | undefined;
 }) => (
   <div
     className={`relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${className}`}
@@ -477,24 +510,24 @@ const DropdownMenuItem = ({ children, className = '', onClick, ...props }: {
     {children}
   </div>
 )
+DropdownMenuItem.displayName = 'DropdownMenuItem';
 
 const DropdownMenuSeparator = ({ className = '', ...props }: {
   className?: string;
-  [key: string]: any;
+  [key: string]: string | undefined;
 }) => (
   <div className={`-mx-1 my-1 h-px bg-muted ${className}`} {...props} />
 )
+DropdownMenuSeparator.displayName = 'DropdownMenuSeparator';
+
 import { 
   Plus, 
   Search, 
   Edit, 
   Trash2, 
-  Eye, 
   Star, 
   Users, 
-  DollarSign, 
   Clock, 
-  Filter,
   MoreHorizontal,
   Sparkles,
   CheckCircle,

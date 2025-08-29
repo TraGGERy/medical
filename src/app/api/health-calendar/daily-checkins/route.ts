@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
     const limit = parseInt(searchParams.get('limit') || '30');
 
-    let whereConditions = [eq(dailyCheckins.userId, userId)];
+    const whereConditions = [eq(dailyCheckins.userId, userId)];
 
     if (startDate) {
       whereConditions.push(gte(dailyCheckins.checkinDate, new Date(startDate)));
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
       whereConditions.push(lte(dailyCheckins.checkinDate, new Date(endDate)));
     }
 
-    let query = db
+    const query = db
       .select({
         id: dailyCheckins.id,
         checkinDate: dailyCheckins.checkinDate,

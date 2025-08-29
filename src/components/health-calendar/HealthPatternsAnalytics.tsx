@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, BarChart3, Brain, Calendar, AlertCircle, Zap, Heart, Moon, Activity, RefreshCw, Loader2 } from 'lucide-react';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { TrendingUp, BarChart3, Brain, Calendar, Zap, Heart, Moon, Activity, RefreshCw, Loader2 } from 'lucide-react';
+import { format, subDays } from 'date-fns';
 import { useUser } from '@clerk/nextjs';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { toast } from 'sonner';
+
+type TimeRangeKey = 'week' | 'month' | '3months' | '6months' | 'year';
+type TabKey = 'overview' | 'trends' | 'patterns' | 'correlations';
 
 interface HealthPatternsAnalyticsProps {
   className?: string;
@@ -18,7 +21,7 @@ interface HealthPattern {
   description: string;
   confidence: number;
   insights: string[];
-  data: any;
+  data: Record<string, unknown>;
   dateRange: {
     start: string;
     end: string;
@@ -49,19 +52,19 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
   const [selectedTimeRange, setSelectedTimeRange] = useState<'week' | 'month' | '3months'>('month');
   const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'patterns' | 'correlations'>('overview');
 
-  const timeRanges = {
+  const timeRanges = useMemo(() => ({
     week: { label: 'This Week', days: 7 },
     month: { label: 'This Month', days: 30 },
     '3months': { label: 'Last 3 Months', days: 90 }
-  };
+  }), []);
 
   useEffect(() => {
     if (user) {
       loadAnalyticsData();
     }
-  }, [user, selectedTimeRange]);
+  }, [user, selectedTimeRange, loadAnalyticsData]);
 
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -84,7 +87,7 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedTimeRange, timeRanges, setLoading, setData]);
 
   const runPatternAnalysis = async () => {
     try {
@@ -119,13 +122,7 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
     }
   };
 
-  const getCorrelationColor = (correlation: number): string => {
-    const abs = Math.abs(correlation);
-    if (abs >= 0.7) return correlation > 0 ? 'text-green-600' : 'text-red-600';
-    if (abs >= 0.5) return correlation > 0 ? 'text-green-500' : 'text-red-500';
-    if (abs >= 0.3) return correlation > 0 ? 'text-yellow-600' : 'text-orange-600';
-    return 'text-gray-500';
-  };
+
 
   const getCorrelationStrength = (correlation: number): string => {
     const abs = Math.abs(correlation);
@@ -135,13 +132,9 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
     return 'Very Weak';
   };
 
-  const getTrendIcon = (trend: number) => {
-    if (trend > 0.1) return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (trend < -0.1) return <TrendingDown className="w-4 h-4 text-red-500" />;
-    return <BarChart3 className="w-4 h-4 text-gray-500" />;
-  };
 
-  const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+
+
 
   if (loading) {
     return (
@@ -183,7 +176,7 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <select
               value={selectedTimeRange}
-              onChange={(e) => setSelectedTimeRange(e.target.value as any)}
+              onChange={(e) => setSelectedTimeRange(e.target.value as TimeRangeKey)}
               className="px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent touch-manipulation text-base sm:text-sm"
             >
               {Object.entries(timeRanges).map(([key, range]) => (
@@ -217,7 +210,7 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
+                onClick={() => setActiveTab(tab.key as TabKey)}
                 className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors touch-manipulation flex-1 sm:flex-none ${
                   activeTab === tab.key
                     ? 'bg-white text-blue-600 shadow-sm'

@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { streakRecords, dailyCheckins, healthNotifications } from '@/lib/db/schema';
-import { eq, and, desc, gte, sql, max } from 'drizzle-orm';
+import { streakRecords, healthNotifications } from '@/lib/db/schema';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 const streakUpdateSchema = z.object({
   streakType: z.enum(['daily_checkin', 'symptom_logging', 'medication_adherence', 'exercise', 'mood_tracking']),
   date: z.string().optional() // defaults to today
-});
-
-const streakQuerySchema = z.object({
-  streakType: z.enum(['daily_checkin', 'symptom_logging', 'medication_adherence', 'exercise', 'mood_tracking']).optional(),
-  includeHistory: z.boolean().default(false),
-  limit: z.number().min(1).max(100).default(10)
 });
 
 // POST - Update streak (called when user completes an activity)
@@ -129,7 +123,7 @@ export async function GET(request: NextRequest) {
     const includeHistory = searchParams.get('includeHistory') === 'true';
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    let whereConditions = [eq(streakRecords.userId, userId)];
+    const whereConditions = [eq(streakRecords.userId, userId)];
     if (streakType) {
       whereConditions.push(eq(streakRecords.streakType, streakType));
     }
@@ -165,7 +159,7 @@ export async function GET(request: NextRequest) {
     // Get overall statistics
     const stats = await getStreakStatistics(userId);
 
-    let response: {
+    const response: {
       streaks: typeof streaksWithStatus;
       statistics: typeof stats;
       history?: {
@@ -225,7 +219,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Streak not found' }, { status: 404 });
     }
 
-    let updateData: {
+    const updateData: {
       updatedAt: Date;
       currentStreak?: number;
       longestStreak?: number;
@@ -296,7 +290,7 @@ async function createMilestoneNotification(userId: string, streakType: string, s
     const title = `🎉 ${streakCount}-Day ${label} Streak!`;
     const message = milestoneType === 'longest' 
       ? `Congratulations! You've achieved a new personal best with ${streakCount} consecutive days of ${label.toLowerCase()}. Keep up the amazing work!`
-      : `Great job! You've maintained your ${label.toLowerCase()} streak for ${streakCount} days. You're building healthy habits!`;
+      : `Great job! You&apos;ve maintained your ${label.toLowerCase()} streak for ${streakCount} days. You&apos;re building healthy habits!`;
 
     await db.insert(healthNotifications).values({
       id: crypto.randomUUID(),
@@ -381,7 +375,7 @@ async function getStreakStatistics(userId: string) {
 // Helper function to get streak history
 async function getStreakHistory(userId: string, streakType?: string | null) {
   try {
-    let whereConditions = [eq(streakRecords.userId, userId)];
+    const whereConditions = [eq(streakRecords.userId, userId)];
     if (streakType) {
       whereConditions.push(eq(streakRecords.streakType, streakType));
     }

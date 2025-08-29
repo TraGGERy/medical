@@ -154,7 +154,7 @@ export class DiagnosticCompletenessDetector {
   /**
    * Create a negative result when conditions aren't met
    */
-  private createNegativeResult(_reason: string): DiagnosticTriggerResult {
+  private createNegativeResult(): DiagnosticTriggerResult {
     const completeness = this.dataCollector.checkCompleteness();
     
     return {
@@ -165,30 +165,6 @@ export class DiagnosticCompletenessDetector {
       recommendedAction: 'collect_more',
       missingCriticalFields: this.identifyMissingCriticalFields(completeness)
     };
-  }
-
-  /**
-   * Notify that a new message was processed
-   */
-  onMessageProcessed(): void {
-    this.messagesSinceLastCheck++;
-  }
-
-  /**
-   * Reset the detector state
-   */
-  reset(): void {
-    this.lastCheckTimestamp = 0;
-    this.messagesSinceLastCheck = 0;
-  }
-
-  /**
-   * Force a check regardless of cooldown
-   */
-  forceCheck(): DiagnosticTriggerResult {
-    this.lastCheckTimestamp = 0;
-    this.messagesSinceLastCheck = this.minMessagesForCheck;
-    return this.shouldTriggerDiagnostic();
   }
 
   /**

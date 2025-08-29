@@ -310,12 +310,7 @@ async function generateAIResponseAsync(
         senderType: 'ai',
         message: aiResponse.message,
         messageType: 'text',
-        metadata: {
-          confidence: aiResponse.confidence,
-          processingTime: aiResponse.processingTime,
-          recommendations: aiResponse.recommendations,
-          ...referralMetadata
-        }
+        metadata: referralMetadata
       })
       .returning();
 
@@ -510,7 +505,7 @@ This will trigger an automatic generation of a detailed diagnostic report for th
 CRITICAL SPECIALTY DETECTION AND REFERRAL PROTOCOL:
 As a ${aiProvider.specialty} specialist, you must recognize when a patient's condition falls outside your area of expertise. This platform has qualified specialists available for immediate referral. If you identify symptoms or conditions that require a different specialty, you MUST:
 
-1. **Acknowledge your limitation**: "Based on what you're describing, this appears to be outside my specialty as a ${aiProvider.specialty} specialist."
+1. **Acknowledge your limitation**: "Based on what you&apos;re describing, this appears to be outside my specialty as a ${aiProvider.specialty} specialist."
 
 2. **Recommend appropriate specialist**: Suggest the most suitable specialist from our available team
 

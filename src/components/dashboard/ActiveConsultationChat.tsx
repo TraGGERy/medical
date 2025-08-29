@@ -1,26 +1,24 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { 
   Send, 
   User, 
-  Bot, 
-  Clock, 
-  AlertCircle, 
   CheckCircle, 
   Phone, 
   Video, 
   FileText, 
-  Star,
+  Star, 
   Sparkles,
   MessageCircle,
   UserPlus,
-  ChevronDown
+  ChevronDown,
+  AlertCircle
 } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
@@ -38,8 +36,16 @@ interface Message {
   senderType: 'patient' | 'ai' | 'ai_provider' | 'user' | 'system';
   content: string;
   messageType: 'text' | 'image' | 'file' | 'system';
-  metadata?: Record<string, unknown>;
+  metadata?: MessageMetadata;
   createdAt: string;
+}
+
+interface MessageMetadata {
+  referralNeeded?: boolean;
+  recommendedSpecialty?: string;
+  suggestedProviderName?: string;
+  suggestedProvider?: string;
+  [key: string]: unknown;
 }
 
 interface AiProvider {
@@ -83,7 +89,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     timestamp: new Date().toISOString()
   });
   
-  const { isSignedIn, userId } = useAuth();
+  const { userId, getToken, isSignedIn } = useAuth();
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -99,7 +105,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [aiResponseTimeout, setAiResponseTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isTabVisible, setIsTabVisible] = useState(true);
-  const [lastMessageCount, setLastMessageCount] = useState(0);
+
   const [wsConnected, setWsConnected] = useState(false);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -114,6 +120,30 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   // Quick response confirmation state
   const [showQuickResponseDialog, setShowQuickResponseDialog] = useState(false);
   const [pendingQuickMessage, setPendingQuickMessage] = useState<{ content: string; responseTime: number } | null>(null);
+  
+  const askInitialHealthQuestions = useCallback(() => {
+    const questions = [
+      "To get started, could you please describe the main reason for your visit today?",
+      "What symptoms are you experiencing? Please be as detailed as possible.",
+      "On a scale of 1 to 10, how would you rate the urgency of your condition?",
+      "Is there anything else you think I should know about your current health situation?"
+    ];
+
+    questions.forEach((question, index) => {
+      setTimeout(() => {
+        const newMessage: Message = {
+          id: `sys-q-${index}-${Date.now()}`,
+          consultationId: consultationId,
+          senderId: 'system',
+          senderType: 'system',
+          content: question,
+          messageType: 'text',
+          createdAt: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, newMessage]);
+      }, index * 1500);
+    });
+  }, [consultationId]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -157,7 +187,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         console.log('⏰ Conversation timing initialized with start time:', conversationStartTime);
       }
     }
-  }, [consultationId, isSignedIn, userId]);
+  }, [consultationId, isSignedIn, userId, fetchConsultation, fetchMessages]);
 
   // Initialize scroll position check
   useEffect(() => {
@@ -167,7 +197,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     }, 100);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [checkIfAtBottom]);
 
   // Smart scroll behavior - only auto-scroll when user is at bottom
   useEffect(() => {
@@ -197,7 +227,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [consultation]);
+  }, [consultation, fetchMessages]);
 
   // Continuous polling for real-time updates (works regardless of tab focus)
   useEffect(() => {
@@ -221,7 +251,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         clearInterval(continuousPollingRef.current);
       }
     };
-  }, [consultation, isTabVisible]);
+  }, [consultation, isTabVisible, fetchMessages]);
 
   // Enhanced polling for AI responses
   useEffect(() => {
@@ -250,7 +280,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [aiResponsePending, consultation]);
+  }, [aiResponsePending, consultation, fetchMessages]);
 
   // Check if AI response arrived
   useEffect(() => {
@@ -292,8 +322,8 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     const lastMessage = messages[messages.length - 1];
     if (lastMessage && (lastMessage.senderType === 'ai' || lastMessage.senderType === 'ai_provider')) {
       // Detect automatic diagnostic report generation notification
-      if (lastMessage.content.includes('🔄 **Generating Comprehensive Diagnostic Report**')) {
-        console.log('🤖 Automatic diagnostic report generation detected');
+      if (lastMessage.content.includes('Generating Comprehensive Diagnostic Report')) {
+        console.log('Automatic diagnostic report generation detected');
         setIsGeneratingReport(true);
         setGenerationProgress({ step: 'Analyzing conversation data...', progress: 25 });
         
@@ -526,11 +556,10 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
       }
       setWsConnected(false);
     };
-  }, [consultation, isSignedIn]);
+  }, [consultation, isSignedIn, getToken]);
 
   // Monitor connection status
   useEffect(() => {
@@ -557,7 +586,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [consultation]);
+  }, [consultation, setConsultation]);
 
   // Close doctor switch dropdown when clicking outside
   useEffect(() => {
@@ -600,16 +629,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     checkIfAtBottom();
   };
 
-  const scrollToReferral = (messageId: string) => {
-    const referralElement = document.getElementById(`referral-${messageId}`);
-    if (referralElement) {
-      referralElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
-
-  const { getToken } = useAuth();
-
-  const fetchAvailableDoctors = async (consultationId: string) => {
+  const fetchAvailableDoctors = useCallback(async (consultationId: string) => {
     try {
       setLoadingDoctors(true);
       console.log('🔄 Fetching available doctors for consultation:', consultationId);
@@ -639,9 +659,9 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     } finally {
       setLoadingDoctors(false);
     }
-  };
+  }, [getToken]);
 
-  const fetchConsultation = async (consultationId: string) => {
+  const fetchConsultation = useCallback(async (consultationId: string) => {
     try {
       setLoading(true);
       console.log('🔄 Fetching consultation:', consultationId);
@@ -693,15 +713,15 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken]);
 
-  const fetchMessages = async (consultationId: string, isPolling = false) => {
+  const fetchMessages = useCallback(async (consultationId: string, isPolling = false) => {
     try {
       if (!isPolling) {
         setMessagesLoading(true);
       }
       console.log('🔄 Fetching messages for consultation:', consultationId);
-      
+
       const token = await getToken();
       const response = await fetch(`/api/ai-consultations/${consultationId}/messages`, {
         headers: {
@@ -710,7 +730,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         // Add timeout for polling requests
         signal: isPolling ? AbortSignal.timeout(5000) : undefined
       });
-      
+
       if (!response.ok) {
         // Don't show error toast for polling failures to avoid spam
         if (!isPolling) {
@@ -719,13 +739,13 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         console.warn('⚠️ Polling request failed:', response.status);
         return;
       }
-      
+
       const data = await response.json();
       console.log('✅ Messages received:', {
         count: data.messages?.length || 0,
         consultationId
       });
-      
+
       // Filter out any invalid messages to prevent undefined errors
       const validMessages = (data.messages || []).filter((message: Message) => 
         message && 
@@ -733,14 +753,14 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         message.senderType && 
         message.content !== undefined
       );
-      
+
       console.log('📋 Valid messages after filtering:', validMessages.map((msg: Message) => ({
         id: msg.id,
         senderType: msg.senderType,
         content: msg.content?.substring(0, 30) + '...',
         createdAt: msg.createdAt
       })));
-      
+
       setMessages(validMessages);
     } catch (error: unknown) {
       console.error('💥 Error fetching messages:', error);
@@ -753,7 +773,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         setMessagesLoading(false);
       }
     }
-  };
+  }, [getToken]);
 
   const sendMessage = async (retryCount = 0) => {
     if (!newMessage.trim() || !consultation || sendingMessage) {
@@ -796,7 +816,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         throw new Error(`Failed to send message: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: { message: Message } = await response.json();
       console.log('✅ Message sent successfully:', {
         messageId: data.message?.id,
         consultationId: consultation.id
@@ -908,7 +928,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         throw new Error('Failed to end consultation');
       }
 
-      const data = await response.json();
+      const data: { consultation: { totalCost: number }, fullDiagnosticReport: boolean } = await response.json();
       
       // Update consultation status
       setConsultation(prev => prev ? {
@@ -975,7 +995,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         throw new Error(`Failed to generate diagnostic report: ${response.status}`);
       }
 
-      const analysisData = await response.json();
+      const analysisData: Record<string, unknown> = await response.json();
       
       setGenerationProgress({ step: 'Saving report to your health records...', progress: 70 });
       
@@ -1136,7 +1156,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
       </div>
     );
   }
@@ -1146,7 +1166,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       <div className="text-center py-12">
         <AlertCircle className="h-16 w-16 mx-auto text-gray-400 mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Consultation Not Found</h3>
-        <p className="text-gray-600 mb-4">The consultation you're looking for doesn't exist or you don't have access to it.</p>
+        <p className="text-gray-600 mb-4">The consultation you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.</p>
       </div>
     );
   }
@@ -1340,7 +1360,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                         <p className="whitespace-pre-wrap">{message.content}</p>
                         
 {/* Referral Notification with inline Switch Doctor button */}
-                        {(message.senderType === 'ai_provider' || message.senderType === 'ai') && Boolean((message.metadata as any)?.referralNeeded) && (
+                        {(message.senderType === 'ai_provider' || message.senderType === 'ai') && message.metadata?.referralNeeded && (
                           <div id={`referral-${message.id}`} className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="flex items-start gap-2">
                               <div className="flex-shrink-0">
@@ -1353,16 +1373,16 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
                                   Specialist Referral Recommended
                                 </h4>
                                 <p className="text-sm text-blue-700 mb-3">
-                                  A {typeof (message.metadata as any)?.recommendedSpecialty === 'string' ? (message.metadata as any).recommendedSpecialty : 'specialist'} is recommended for your case.
-                                  {typeof (message.metadata as any)?.suggestedProviderName === 'string' && (
-                                    <span> Dr. {(message.metadata as any).suggestedProviderName} is available to assist you.</span>
+                                  A {message.metadata?.recommendedSpecialty ? message.metadata.recommendedSpecialty : 'specialist'} is recommended for your case.
+                                  {message.metadata?.suggestedProviderName && (
+                                    <span> Dr. {message.metadata.suggestedProviderName} is available to assist you.</span>
                                   )}
                                 </p>
-                                {typeof (message.metadata as any)?.suggestedProvider === 'string' && (
+                                {message.metadata?.suggestedProvider && (
                                   <Button
                                     onClick={() => switchDoctor(
-                                      ((message.metadata as any).suggestedProvider as string) ?? '',
-                                      `Referral to ${typeof (message.metadata as any)?.recommendedSpecialty === 'string' ? (message.metadata as any).recommendedSpecialty : 'specialist'}`
+                                      message.metadata?.suggestedProvider ?? '',
+                                      `Referral to ${message.metadata?.recommendedSpecialty ? message.metadata.recommendedSpecialty : 'specialist'}`
                                     )}
                                     disabled={switchingDoctor}
                                     size="sm"

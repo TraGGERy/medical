@@ -5,6 +5,18 @@ import { eq, and, desc, count, like, or, sql } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 import { v4 as uuidv4 } from 'uuid';
 
+interface ConsultationRequestBody {
+  aiProviderId: string;
+  reasonForVisit: string;
+  symptoms: string[];
+  urgencyLevel?: number;
+  patientAge?: number;
+  patientGender?: 'male' | 'female' | 'other';
+  medicalHistory?: string[];
+  currentMedications?: string[];
+  allergies?: string[];
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth();
@@ -145,7 +157,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body: ConsultationRequestBody = await request.json();
     const {
       aiProviderId,
       reasonForVisit,
@@ -209,7 +221,7 @@ export async function POST(request: NextRequest) {
       .returning();
 
     // Create initial welcome message from AI provider
-    const welcomeMessage = `Hello! I'm ${provider[0].name}, your ${provider[0].specialty} specialist. I understand you're here because of ${reasonForVisit}. I'm here to help you understand your symptoms and provide guidance. Let's start by discussing what you're experiencing in more detail.`;
+    const welcomeMessage = `Hello! I&apos;m ${provider[0].name}, your ${provider[0].specialty} specialist. I understand you&apos;re here because of ${reasonForVisit}. I&apos;m here to help you understand your symptoms and provide guidance. Let&apos;s start by discussing what you&apos;re experiencing in more detail.`;
 
     await db
       .insert(consultationMessages)

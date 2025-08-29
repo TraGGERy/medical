@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import ProviderDashboard from '@/components/telemedicine/ProviderDashboard';
 import Header from '@/components/Header';
 import { ArrowLeft, Stethoscope } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
 
 export default function ProviderDashboardPage() {

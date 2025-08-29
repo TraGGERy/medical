@@ -2,7 +2,7 @@ import { emailNotificationService } from './email-service';
 import { db } from '@/lib/db';
 import { healthNotifications } from '@/lib/db/schema';
 import { eq, and, lte } from 'drizzle-orm';
-import { subHours, subDays } from 'date-fns';
+import { subHours } from 'date-fns';
 
 interface SchedulerConfig {
   persistentHealthCheckInterval: number; // in milliseconds

@@ -340,34 +340,6 @@ export class AutomaticDiagnosticReportService {
       // Don't throw here as the report was already saved successfully
     }
   }
-
-  /**
-   * Check if a consultation already has a generated report
-   */
-  async hasExistingReport(consultationId: string): Promise<boolean> {
-    try {
-      // Check if there are recent reports for this user within the consultation timeframe
-      // Since healthReports doesn't have consultationId, we'll check by userId and recent timestamp
-      return false; // For now, always allow report generation
-    } catch (error) {
-      console.error('Error checking existing reports:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get generation status for a consultation
-   */
-  getGenerationStatus(consultationId: string): boolean {
-    return this.isGenerating.get(consultationId) || false;
-  }
-
-  /**
-   * Reset service state
-   */
-  reset(): void {
-    this.isGenerating.clear();
-  }
 }
 
 // Export singleton instance

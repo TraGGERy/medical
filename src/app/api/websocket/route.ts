@@ -1,9 +1,7 @@
 import { NextRequest } from 'next/server';
 import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
-import { parse } from 'url';
 import { auth } from '@clerk/nextjs/server';
-import jwt from 'jsonwebtoken';
 
 // WebSocket server instance
 let io: SocketIOServer | null = null;
@@ -40,7 +38,7 @@ function initializeWebSocketServer() {
       socket.data.authenticated = true;
       
       next();
-    } catch (error) {
+    } catch {
       next(new Error('Authentication failed'));
     }
   });

@@ -12,24 +12,22 @@ import {
   Star,
   TrendingUp,
   DollarSign,
-  FileText,
   Settings,
   Bell,
-  CheckCircle,
-  AlertCircle,
-  User,
-  Edit,
   Eye
 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
+import { 
+  Card,
+} from "@/components/ui/Card";
+import Image from 'next/image';
 
 const ProviderDashboard: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'appointments' | 'patients' | 'availability'>('overview');
 
   const stats = [
     {
-      label: 'Today\'s Appointments',
+      label: "Today&apos;s Appointments",
       value: '8',
       change: '+2 from yesterday',
       icon: Calendar,
@@ -177,10 +175,10 @@ const ProviderDashboard: React.FC = () => {
         })}
       </div>
 
-      {/* Today's Schedule */}
+      {/* Today&apos;s Schedule */}
       <Card className="p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Today's Schedule</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Today&apos;s Schedule</h2>
           <Button variant="outline" size="sm">
             <Calendar className="w-4 h-4 mr-2" />
             View Full Calendar
@@ -193,9 +191,11 @@ const ProviderDashboard: React.FC = () => {
             return (
               <div key={appointment.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-4">
-                  <img 
+                  <Image 
                     src={appointment.patient.avatar} 
                     alt={appointment.patient.name}
+                    width={40}
+                    height={40}
                     className="w-10 h-10 rounded-full object-cover"
                   />
                   <div>
@@ -248,9 +248,11 @@ const ProviderDashboard: React.FC = () => {
           {recentPatients.map((patient) => (
             <div key={patient.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-4">
-                <img 
+                <Image 
                   src={patient.avatar} 
                   alt={patient.name}
+                  width={40}
+                  height={40}
                   className="w-10 h-10 rounded-full object-cover"
                 />
                 <div>
@@ -337,7 +339,7 @@ const ProviderDashboard: React.FC = () => {
               <Button
                 key={tab.id}
                 variant={selectedTab === tab.id ? "default" : "ghost"}
-                onClick={() => setSelectedTab(tab.id as any)}
+                onClick={() => setSelectedTab(tab.id as 'overview' | 'appointments' | 'patients' | 'availability')}
                 className="flex items-center space-x-2 px-4 py-2"
               >
                 <IconComponent className="w-4 h-4" />

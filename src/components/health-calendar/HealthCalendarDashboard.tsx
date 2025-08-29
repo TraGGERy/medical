@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Activity, Heart, Pill, AlertCircle, TrendingUp, Wifi, WifiOff } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns';
 import { useUser } from '@clerk/nextjs';
@@ -49,27 +49,26 @@ const HealthCalendarDashboard: React.FC = () => {
   const [showEventModal, setShowEventModal] = useState(false);
   const [showCheckinForm, setShowCheckinForm] = useState(false);
   
-  // WebSocket integration for real-time updates
-  const { connectionState, isConnected, emitHealthEvent } = useWebSocket({
+  const { connectionState, isConnected } = useWebSocket({
     onHealthEventUpdate: (event: HealthCalendarEvent) => {
       console.log('Received health event update:', event);
       if (event.type === 'health_event_created') {
-        handleRealTimeEventCreated(event.data as any);
+        handleRealTimeEventCreated(event.data as HealthEvent);
       } else if (event.type === 'health_event_updated') {
-        handleRealTimeEventUpdated(event.data as any);
+        handleRealTimeEventUpdated(event.data as HealthEvent);
       } else if (event.type === 'health_event_deleted') {
-        handleRealTimeEventDeleted(event.data as any);
+        handleRealTimeEventDeleted(event.data as HealthEvent);
       }
     },
     onDailyCheckinUpdate: (event: HealthCalendarEvent) => {
       console.log('Received daily checkin update:', event);
       if (event.type === 'daily_checkin_created' || event.type === 'daily_checkin_updated') {
-        handleRealTimeCheckinUpdate(event.data as any);
+        handleRealTimeCheckinUpdate(event.data as DailyCheckin);
       }
     },
     onNotificationUpdate: (event: HealthCalendarEvent) => {
       console.log('Received notification update:', event);
-      toast.info((event.data as any).message || 'New health notification received');
+      toast.info((event.data as { message: string }).message || 'New health notification received');
     },
     onConnect: () => {
       toast.success('Connected to real-time updates');
@@ -83,25 +82,16 @@ const HealthCalendarDashboard: React.FC = () => {
     }
   });
 
-  // Get calendar days for current month
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Load data on component mount and when month changes
-  useEffect(() => {
-    if (user) {
-      loadCalendarData();
-    }
-  }, [user, currentDate]);
-
-  const loadCalendarData = async () => {
+  const loadCalendarData = useCallback(async () => {
     try {
       setLoading(true);
-      const startDate = format(monthStart, 'yyyy-MM-dd');
-      const endDate = format(monthEnd, 'yyyy-MM-dd');
+      const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+      const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
 
-      // Load health events for the month
       const eventsResponse = await fetch(
         `/api/health-calendar/health-events?startDate=${startDate}&endDate=${endDate}`
       );
@@ -110,7 +100,6 @@ const HealthCalendarDashboard: React.FC = () => {
         setHealthEvents(eventsData.events || []);
       }
 
-      // Load daily check-ins for the month
       const checkinsResponse = await fetch(
         `/api/health-calendar/daily-checkins?startDate=${startDate}&endDate=${endDate}`
       );
@@ -119,7 +108,6 @@ const HealthCalendarDashboard: React.FC = () => {
         setDailyCheckins(checkinsData.checkins || []);
       }
 
-      // Load streak information
       const streaksResponse = await fetch('/api/health-calendar/streaks');
       if (streaksResponse.ok) {
         const streaksData = await streaksResponse.json();
@@ -131,10 +119,15 @@ const HealthCalendarDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentDate]);
 
-  // Real-time event handlers
-  const handleRealTimeEventCreated = (eventData: { id: string; title: string; description?: string; eventType: string; date: string; severity?: number; time?: string; duration?: number; tags?: string[]; userId: string; createdAt: string; updatedAt: string }) => {
+  useEffect(() => {
+    if (user) {
+      loadCalendarData();
+    }
+  }, [user, loadCalendarData]);
+
+  const handleRealTimeEventCreated = (eventData: HealthEvent) => {
     const newEvent: HealthEvent = {
       id: eventData.id,
       eventType: eventData.eventType as HealthEvent['eventType'],
@@ -150,7 +143,7 @@ const HealthCalendarDashboard: React.FC = () => {
     toast.success('New health event added');
   };
 
-  const handleRealTimeEventUpdated = (eventData: { id: string; title: string; description?: string; eventType: string; date: string; severity?: number; time?: string; duration?: number; tags?: string[]; userId: string; createdAt: string; updatedAt: string }) => {
+  const handleRealTimeEventUpdated = (eventData: HealthEvent) => {
     const updatedEvent: HealthEvent = {
       id: eventData.id,
       eventType: eventData.eventType as HealthEvent['eventType'],
@@ -173,7 +166,7 @@ const HealthCalendarDashboard: React.FC = () => {
     toast.info('Health event deleted');
   };
 
-  const handleRealTimeCheckinUpdate = (checkinData: { id: string; date: string; mood: number; energy: number; sleepQuality: number; sleepHours?: number; symptoms?: string[]; medications?: string[]; notes?: string; userId: string; createdAt: string; updatedAt: string }) => {
+  const handleRealTimeCheckinUpdate = (checkinData: DailyCheckin) => {
     const updatedCheckin: DailyCheckin = {
       id: checkinData.id,
       date: checkinData.date,
@@ -244,75 +237,14 @@ const HealthCalendarDashboard: React.FC = () => {
     setSelectedDate(date);
   };
 
-  const handleQuickCheckin = async () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
+  const handleQuickCheckin = () => {
     const existingCheckin = getCheckinForDate(new Date());
-    
     if (existingCheckin) {
-      toast.info('You\'ve already completed today\'s check-in!');
+      toast.info("You've already completed today's check-in!");
       return;
     }
     
     setShowCheckinForm(true);
-  };
-
-  const handleEventSave = async (eventData: { title: string; description?: string; eventType: string; date: string }) => {
-    try {
-      const response = await fetch('/api/health-calendar/health-events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(eventData)
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Emit WebSocket event for real-time updates
-        if (isConnected) {
-          emitHealthEvent('health_event_created', result.data);
-        }
-        
-        await loadCalendarData();
-        setShowEventModal(false);
-        toast.success('Event created successfully');
-      } else {
-        throw new Error('Failed to save event');
-      }
-    } catch (error) {
-      console.error('Error saving event:', error);
-      toast.error('Failed to save event');
-    }
-  };
-
-  const handleCheckinSave = async (checkinData: { mood: number; energy: number; sleepQuality: number; notes?: string }) => {
-    try {
-      const response = await fetch('/api/health-calendar/daily-checkins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...checkinData,
-          date: format(selectedDate, 'yyyy-MM-dd')
-        })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Emit WebSocket event for real-time updates
-        if (isConnected) {
-          emitHealthEvent('daily_checkin_created', result.data);
-        }
-        
-        await loadCalendarData();
-        setShowCheckinForm(false);
-        toast.success('Daily check-in saved successfully');
-      } else {
-        throw new Error('Failed to save check-in');
-      }
-    } catch (error) {
-      console.error('Error saving check-in:', error);
-      toast.error('Failed to save check-in');
-    }
   };
 
   const renderCalendarDay = (date: Date) => {
@@ -348,7 +280,7 @@ const HealthCalendarDashboard: React.FC = () => {
         </div>
         
         <div className="space-y-1">
-          {events.slice(0, 3).map((event, index) => (
+          {events.slice(0, 3).map((event) => (
             <div
               key={event.id}
               className="flex items-center gap-1 text-xs p-1 rounded bg-white shadow-sm"
@@ -373,26 +305,26 @@ const HealthCalendarDashboard: React.FC = () => {
     
     return (
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold text-lg">Daily Check-in Streak</h3>
-            <p className="text-blue-100">
-              {dailyCheckinStreak ? `${dailyCheckinStreak.currentStreak} days` : 'Start your streak!'}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold">
-              {dailyCheckinStreak?.currentStreak || 0}
-            </div>
-            <div className="text-xs text-blue-200">
-              Best: {dailyCheckinStreak?.longestStreak || 0}
-            </div>
-          </div>
-        </div>
-        
+         <div className="flex items-center justify-between">
+           <div>
+             <h3 className="font-semibold text-lg">Daily Check-in Streak</h3>
+             <p className="text-blue-100">
+               {dailyCheckinStreak ? `${dailyCheckinStreak.currentStreak} days` : 'Start your streak!'}
+             </p>
+           </div>
+           <div className="text-right">
+             <div className="text-2xl font-bold">
+               {dailyCheckinStreak?.currentStreak || 0}
+             </div>
+             <div className="text-xs text-blue-200">
+               Best: {dailyCheckinStreak?.longestStreak || 0}
+             </div>
+           </div>
+         </div>
+         
         {dailyCheckinStreak?.status === 'at_risk' && (
           <div className="mt-2 text-yellow-200 text-sm">
-            ⚠️ Your streak is at risk! Complete today's check-in to continue.
+            ⚠️ Your streak is at risk! Complete today&apos;s check-in to continue.
           </div>
         )}
       </div>
@@ -405,7 +337,7 @@ const HealthCalendarDashboard: React.FC = () => {
     const isSelectedToday = isToday(selectedDate);
 
     return (
-      <div className="bg-white rounded-lg shadow-sm border p-4">
+      <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-lg">
             {format(selectedDate, 'EEEE, MMMM d, yyyy')}
@@ -500,11 +432,11 @@ const HealthCalendarDashboard: React.FC = () => {
                 </div>
               ))}
             </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
 
   if (loading) {
     return (

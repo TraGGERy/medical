@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useAuth } from '@clerk/nextjs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/button';
+import { useAuth } from '@clerk/nextjs';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
@@ -13,7 +13,6 @@ import {
   Eye, 
   Calendar, 
   Clock, 
-  User, 
   Bot,
   Search,
   Filter,
@@ -74,7 +73,6 @@ interface ConsultationHistoryProps {
 
 const ConsultationHistory: React.FC<ConsultationHistoryProps> = ({ onViewReport, onResumeChat }) => {
   const router = useRouter();
-  const { user, isLoaded, isSignedIn } = useUser();
   const { getToken } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -154,7 +152,7 @@ const ConsultationHistory: React.FC<ConsultationHistoryProps> = ({ onViewReport,
     } finally {
       setLoading(false);
     }
-  }, [currentPage, statusFilter, searchTerm, reportsPerPage]);
+  }, [currentPage, statusFilter, searchTerm, reportsPerPage, getToken]);
 
   // Load consultations on component mount and when filters change
   useEffect(() => {

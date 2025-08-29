@@ -19,8 +19,8 @@ type HealthEvent = {
   frequency: string | null;
   dosage: string | null;
   unit: string | null;
-  tags: any;
-  metadata: any;
+  tags: string[] | null;
+  metadata: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -90,6 +90,7 @@ type SeverityAnalysis = {
   insights: string[];
 };
 
+/*
 type HealthPattern = {
   id: string;
   userId: string;
@@ -97,16 +98,17 @@ type HealthPattern = {
   title: string;
   description: string;
   confidenceScore: string;
-  dataPoints: any;
-  correlations: any;
-  insights: any;
-  recommendations: any;
+  dataPoints: Record<string, unknown>;
+  correlations: Record<string, unknown> | null;
+  insights: string[];
+  recommendations: string[] | null;
   periodStart: Date;
   periodEnd: Date;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
+*/
 
 // Normalize DB select types to internal analysis types
 type DbHealthEvent = typeof healthEvents.$inferSelect;
@@ -120,16 +122,16 @@ function normalizeHealthEvent(row: DbHealthEvent): HealthEvent {
     title: row.title,
     description: row.description ?? null,
     severity: row.severity ?? null,
-    startDate: row.startDate instanceof Date ? row.startDate : new Date(row.startDate as any),
-    endDate: row.endDate ? (row.endDate instanceof Date ? row.endDate : new Date(row.endDate as any)) : null,
+    startDate: new Date(row.startDate),
+    endDate: row.endDate ? new Date(row.endDate) : null,
     isOngoing: !!row.isOngoing,
     frequency: row.frequency ?? null,
     dosage: row.dosage ?? null,
     unit: row.unit ?? null,
-    tags: row.tags ?? null,
-    metadata: row.metadata ?? null,
-    createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt as any),
-    updatedAt: row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt as any),
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    metadata: typeof row.metadata === 'object' && row.metadata !== null ? row.metadata : {},
+    createdAt: new Date(row.createdAt),
+    updatedAt: new Date(row.updatedAt),
   };
 }
 
@@ -137,7 +139,7 @@ function normalizeDailyCheckin(row: DbDailyCheckin): DailyCheckin {
   return {
     id: row.id,
     userId: row.userId,
-    checkinDate: row.checkinDate instanceof Date ? row.checkinDate : new Date(row.checkinDate as any),
+    checkinDate: new Date(row.checkinDate),
     moodRating: row.moodRating ?? null,
     energyLevel: row.energyLevel ?? null,
     sleepQuality: row.sleepQuality ?? null,
@@ -146,8 +148,8 @@ function normalizeDailyCheckin(row: DbDailyCheckin): DailyCheckin {
     exerciseMinutes: row.exerciseMinutes ?? null,
     waterIntake: row.waterIntake != null ? String(row.waterIntake) : null,
     notes: row.notes ?? null,
-    createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt as any),
-    updatedAt: row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt as any),
+    createdAt: new Date(row.createdAt),
+    updatedAt: new Date(row.updatedAt),
   };
 }
 
@@ -186,7 +188,7 @@ export async function POST(request: NextRequest) {
     const startDate = new Date(Date.now() - timeframeDays * 24 * 60 * 60 * 1000);
 
     // Fetch health events
-    let eventConditions = [eq(healthEvents.userId, userId), gte(healthEvents.startDate, startDate)];
+    const eventConditions = [eq(healthEvents.userId, userId), gte(healthEvents.startDate, startDate)];
     if (validatedData.eventTypes && validatedData.eventTypes.length > 0) {
       eventConditions.push(sql`${healthEvents.eventType} = ANY(${validatedData.eventTypes})`);
     }
@@ -290,11 +292,11 @@ export async function GET(request: NextRequest) {
       correlations: typeof p.correlations === 'string' ? JSON.parse(p.correlations) : p.correlations,
       insights: typeof p.insights === 'string' ? JSON.parse(p.insights) : p.insights,
       recommendations: typeof p.recommendations === 'string' ? JSON.parse(p.recommendations) : p.recommendations,
-      periodStart: p.periodStart instanceof Date ? p.periodStart : new Date(p.periodStart as any),
-      periodEnd: p.periodEnd instanceof Date ? p.periodEnd : new Date(p.periodEnd as any),
+      periodStart: p.periodStart instanceof Date ? p.periodStart : new Date(p.periodStart as string),
+      periodEnd: p.periodEnd instanceof Date ? p.periodEnd : new Date(p.periodEnd as string),
       isActive: !!p.isActive,
-      createdAt: p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt as any),
-      updatedAt: p.updatedAt instanceof Date ? p.updatedAt : new Date(p.updatedAt as any),
+      createdAt: p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt as string),
+      updatedAt: p.updatedAt instanceof Date ? p.updatedAt : new Date(p.updatedAt as string),
     }));
 
     return NextResponse.json({ success: true, patterns });
@@ -463,11 +465,12 @@ function calculateMoodSymptomCorrelation(events: HealthEvent[], checkins: DailyC
   const moodData = checkins.filter(c => c.moodRating).map(c => ({ date: c.checkinDate.toISOString().split('T')[0], mood: c.moodRating || 0 }));
   
   // Calculate correlation between symptom presence and mood
-  let correlation = 0;
+  const correlation = 0;
   if (moodData.length > 0) {
     const avgMoodWithSymptoms = moodData.filter(m => symptomDays.includes(m.date)).reduce((sum, m) => sum + m.mood, 0) / Math.max(1, moodData.filter(m => symptomDays.includes(m.date)).length);
     const avgMoodWithoutSymptoms = moodData.filter(m => !symptomDays.includes(m.date)).reduce((sum, m) => sum + m.mood, 0) / Math.max(1, moodData.filter(m => !symptomDays.includes(m.date)).length);
-    correlation = (avgMoodWithoutSymptoms - avgMoodWithSymptoms) / 5; // Normalize to -1 to 1
+    const finalCorrelation = (avgMoodWithoutSymptoms - avgMoodWithSymptoms) / 5; // Normalize to -1 to 1
+    return { correlation: finalCorrelation };
   }
   
   return { correlation };

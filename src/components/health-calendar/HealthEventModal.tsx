@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, AlertTriangle, Pill, Stethoscope, Activity, Save, Trash2, Loader2 } from 'lucide-react';
+import { X, Calendar, AlertTriangle, Pill, Stethoscope, Activity, Save, Trash2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
@@ -25,7 +25,7 @@ interface HealthEvent {
   severity?: number;
   category?: string;
   tags?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 const HealthEventModal: React.FC<HealthEventModalProps> = ({
@@ -37,7 +37,6 @@ const HealthEventModal: React.FC<HealthEventModalProps> = ({
   onDeleteSuccess
 }) => {
   const { user } = useUser();
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   
@@ -127,7 +126,7 @@ const HealthEventModal: React.FC<HealthEventModalProps> = ({
     }
   }, [existingEvent, selectedDate]);
 
-  const handleInputChange = (field: keyof HealthEvent, value: any) => {
+  const handleInputChange = (field: keyof HealthEvent, value: string | number | string[] | Record<string, unknown>) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -196,7 +195,7 @@ const HealthEventModal: React.FC<HealthEventModalProps> = ({
         throw new Error('Failed to save health event');
       }
 
-      const result = await response.json();
+      await response.json();
       
       toast.success(existingEvent ? 'Health event updated successfully!' : 'Health event saved successfully!');
       

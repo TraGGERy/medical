@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -28,17 +28,18 @@ import MyAppointments from '@/components/telemedicine/MyAppointments';
 import ConsultationHistory from '@/components/dashboard/ConsultationHistory';
 import ActiveConsultationChat from '@/components/dashboard/ActiveConsultationChat';
 import HealthCalendarDashboard from '@/components/health-calendar/HealthCalendarDashboard';
-import StatCard from '@/components/ui/statcard';
-import { Button } from '@/components/ui/button';
+import StatCard from '@/components/ui/StatCard';
+import { Button } from '@/components/ui/Button';
 
 // Inline Card component to resolve module import issues
-const Card = ({ className = '', children, ...props }: { className?: string; children: React.ReactNode; [key: string]: any }) => {
+const Card = ({ className = '', children, ...props }: { className?: string; children: React.ReactNode; [key: string]: unknown }) => {
   return (
     <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`} {...props}>
       {children}
     </div>
   );
 };
+Card.displayName = 'Card';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -97,37 +98,37 @@ export default function Dashboard() {
   const [activeConsultationId, setActiveConsultationId] = useState<string | null>(null);
   const [isLoadingLastConsultation, setIsLoadingLastConsultation] = useState(false);
 
+  const loadLastActiveConsultation = useCallback(async () => {
+    if (activeTab === 'active-chat' && !activeConsultationId && !isLoadingLastConsultation) {
+      console.log('🔄 Dashboard - Auto-loading last active consultation');
+      setIsLoadingLastConsultation(true);
+      
+      try {
+        const response = await fetch('/api/ai-consultations/last-active');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.consultation) {
+            console.log('✅ Dashboard - Found last active consultation:', data.consultation.id);
+            setActiveConsultationId(data.consultation.id);
+            toast.success('Resumed your last consultation');
+          } else {
+            console.log('ℹ️ Dashboard - No active consultation found');
+          }
+        } else {
+          console.error('❌ Dashboard - Failed to fetch last consultation:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Dashboard - Error loading last consultation:', error);
+      } finally {
+        setIsLoadingLastConsultation(false);
+      }
+    }
+  }, [activeTab, activeConsultationId, isLoadingLastConsultation]);
+
   // Auto-load last active consultation when switching to active-chat tab
   useEffect(() => {
-    const loadLastActiveConsultation = async () => {
-      if (activeTab === 'active-chat' && !activeConsultationId && !isLoadingLastConsultation) {
-        console.log('🔄 Dashboard - Auto-loading last active consultation');
-        setIsLoadingLastConsultation(true);
-        
-        try {
-          const response = await fetch('/api/ai-consultations/last-active');
-          if (response.ok) {
-            const data = await response.json();
-            if (data.consultation) {
-              console.log('✅ Dashboard - Found last active consultation:', data.consultation.id);
-              setActiveConsultationId(data.consultation.id);
-              toast.success('Resumed your last consultation');
-            } else {
-              console.log('ℹ️ Dashboard - No active consultation found');
-            }
-          } else {
-            console.error('❌ Dashboard - Failed to fetch last consultation:', response.status);
-          }
-        } catch (error) {
-          console.error('❌ Dashboard - Error loading last consultation:', error);
-        } finally {
-          setIsLoadingLastConsultation(false);
-        }
-      }
-    };
-
     loadLastActiveConsultation();
-  }, [activeTab, activeConsultationId, isLoadingLastConsultation]);
+  }, [loadLastActiveConsultation]);
 
   const handleBookAppointment = () => {
     setBookingLoading(true);
@@ -398,7 +399,7 @@ function DashboardOverview({ onStartDiagnostic }: { onStartDiagnostic: () => voi
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  Ready to take charge of your health today?
+                  Ready to take charge of today&apos;s health?
                 </motion.p>
               </div>
               

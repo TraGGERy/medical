@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Flame, Trophy, Target, Calendar, Star, Gift, Zap, Award, TrendingUp, CheckCircle, Lock, Unlock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Flame, Trophy, Target, Calendar, Star, Gift, Zap, Award, CheckCircle, Unlock } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
+
+type TabType = 'streak' | 'achievements' | 'rewards';
 
 interface StreakTrackerProps {
   className?: string;
@@ -46,22 +48,10 @@ interface Reward {
   claimedAt: string | null;
 }
 
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  progress: number;
-  target: number;
-  completed: boolean;
-  reward: string;
-}
-
 const StreakTracker: React.FC<StreakTrackerProps> = ({ className = '', onStreakUpdate }) => {
   const { user } = useUser();
   const [loading, setLoading] = useState(true);
   const [streakData, setStreakData] = useState<StreakData | null>(null);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [selectedTab, setSelectedTab] = useState<'streak' | 'achievements' | 'rewards'>('streak');
   const [showCelebration, setShowCelebration] = useState(false);
 
@@ -117,13 +107,7 @@ const StreakTracker: React.FC<StreakTrackerProps> = ({ className = '', onStreakU
     }
   ];
 
-  useEffect(() => {
-    if (user) {
-      loadStreakData();
-    }
-  }, [user]);
-
-  const loadStreakData = async () => {
+  const loadStreakData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -134,7 +118,6 @@ const StreakTracker: React.FC<StreakTrackerProps> = ({ className = '', onStreakU
       
       const data = await response.json();
       setStreakData(data.streak);
-      setAchievements(data.achievements || []);
       
       if (onStreakUpdate) {
         onStreakUpdate(data.streak);
@@ -145,7 +128,13 @@ const StreakTracker: React.FC<StreakTrackerProps> = ({ className = '', onStreakU
     } finally {
       setLoading(false);
     }
-  };
+  }, [onStreakUpdate]);
+
+  useEffect(() => {
+    if (user) {
+      loadStreakData();
+    }
+  }, [user, loadStreakData]);
 
   const updateStreak = async (type: 'checkin' | 'symptom' | 'medication') => {
     try {
@@ -208,7 +197,7 @@ const StreakTracker: React.FC<StreakTrackerProps> = ({ className = '', onStreakU
     if (streak >= 100) return 'Legendary health champion! 🌟';
     if (streak >= 60) return 'Wellness master! Keep it up! 🏆';
     if (streak >= 30) return 'Health champion! Amazing dedication! 👑';
-    if (streak >= 14) return 'You\'re on fire! Great consistency! 💪';
+    if (streak >= 14) return "You&apos;re on fire! Great consistency! 💪";
     if (streak >= 7) return 'One week strong! Keep going! ⭐';
     if (streak >= 3) return 'Building great habits! 🔥';
     if (streak >= 1) return 'Great start! Keep it up! 🎯';
@@ -301,7 +290,7 @@ const StreakTracker: React.FC<StreakTrackerProps> = ({ className = '', onStreakU
             return (
               <button
                 key={tab.key}
-                onClick={() => setSelectedTab(tab.key as any)}
+                onClick={() => setSelectedTab(tab.key as TabType)}
                 className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors touch-manipulation flex-1 ${
                   selectedTab === tab.key
                     ? 'bg-white text-orange-600 shadow-sm'
@@ -392,7 +381,7 @@ const StreakTracker: React.FC<StreakTrackerProps> = ({ className = '', onStreakU
                 <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500 flex-shrink-0" />
                 <div className="text-left min-w-0">
                   <div className="font-medium text-orange-900 text-sm sm:text-base">Daily Check-in</div>
-                  <div className="text-xs sm:text-sm text-orange-700">Log today's health</div>
+                  <div className="text-xs sm:text-sm text-orange-700">Log today&apos;s health</div>
                 </div>
               </button>
               

@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { Clock, AlertTriangle } from 'lucide-react';
 
 interface QuickResponseConfirmDialogProps {
@@ -51,14 +51,14 @@ export function QuickResponseConfirmDialog({
               <div>
                 <p className="text-sm">
                   You responded very quickly ({formatResponseTime(responseTime)}). 
-                  This might indicate you're providing additional thoughts or corrections.
+                  This might indicate you&apos;re providing additional thoughts or corrections.
                 </p>
               </div>
             </div>
             
             <div className="bg-gray-50 p-3 rounded-lg">
               <p className="text-sm font-medium text-gray-700 mb-1">Your message:</p>
-              <p className="text-sm text-gray-600 italic">"{message}"</p>
+              <p className="text-sm text-gray-600 italic">&quot;{message}&quot;</p>
             </div>
             
             <p className="text-sm text-gray-600">

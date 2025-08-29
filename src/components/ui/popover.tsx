@@ -56,7 +56,7 @@ PopoverTrigger.displayName = "PopoverTrigger";
 const PopoverContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & PopoverContentProps
->(({ className, align = "center", side = "bottom", children, ...props }, ref) => {
+>(({ className, align = "center", side = "bottom", children, ...props }) => {
   const { open, setOpen } = React.useContext(PopoverContext);
   const contentRef = React.useRef<HTMLDivElement>(null);
 

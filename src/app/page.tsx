@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import AuthLoadingSpinner from '@/components/AuthLoadingSpinner';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 
 

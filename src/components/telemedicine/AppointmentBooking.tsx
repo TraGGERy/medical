@@ -4,22 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
 import { 
-  Calendar, 
-  Clock, 
-  User, 
-  Stethoscope, 
-  MapPin, 
   Video,
   Phone,
   MessageSquare,
   Star,
-  ChevronLeft,
-  ChevronRight,
-  Loader2
+  Loader2,
+  ChevronLeft
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface Provider {
   id: string;
@@ -36,30 +31,47 @@ interface Provider {
   description?: string;
 }
 
-interface TimeSlot {
-  time: string;
-  available: boolean;
+interface HumanProviderData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  specialty: string;
+  rating: string;
+  totalReviews: number;
+  languages: string[];
+  consultationFee: string;
+  yearsOfExperience: number;
+}
+
+interface AIProviderData {
+    id: string;
+    name: string;
+    specialty: string;
+    rating: string;
+    totalConsultations: number;
+    avatar: string;
+    profileImage: string;
+    languages: string[];
+    consultationFee: string;
+    experience: string;
+    description: string;
 }
 
 interface AppointmentBookingProps {
   onComplete: (consultationId?: string) => void;
-  onCancel?: () => void;
 }
 
-const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete, onCancel }) => {
-  const { user, isLoaded, isSignedIn } = useUser();
+const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete }) => {
+  const { user, isSignedIn } = useUser();
   const { getToken } = useAuth();
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [appointmentType, setAppointmentType] = useState<'video' | 'phone' | 'in-person'>('video');
+  const [appointmentType, setAppointmentType] = useState<'video' | 'phone' | 'chat'>('video');
   const [reason, setReason] = useState<string>('');
   const [isBooking, setIsBooking] = useState<boolean>(false);
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
 
   // Fetch providers from API
   useEffect(() => {
@@ -77,7 +89,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete, onC
         const aiData = aiResponse.ok ? await aiResponse.json() : { providers: [] };
         
         // Transform human providers to match expected format
-        const humanProviders = (humanData.data || []).map((provider: any) => ({
+        const humanProviders = (humanData.data || []).map((provider: HumanProviderData) => ({
           id: provider.id,
           name: `${provider.firstName || ''} ${provider.lastName || ''}`.trim() || 'Unknown Provider',
           specialty: provider.specialty || 'General Medicine',
@@ -92,7 +104,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete, onC
         }));
         
         // Transform AI providers to match expected format
-        const aiProviders = (aiData.providers || []).map((provider: any) => ({
+        const aiProviders = (aiData.providers || []).map((provider: AIProviderData) => ({
           id: provider.id,
           name: provider.name,
           specialty: provider.specialty,
@@ -166,7 +178,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete, onC
     { id: 'chat', label: 'Secure Chat', icon: MessageSquare, description: 'Text-based consultation' }
   ];
 
-  const handleStartAIConsultation = async (provider: any) => {
+  const handleStartAIConsultation = async (provider: Provider) => {
     if (!reason.trim()) {
       toast.error('Please provide a reason for visit before starting consultation');
       return;
@@ -200,29 +212,13 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete, onC
         throw new Error(errorData.error || 'Failed to start AI consultation');
       }
 
-      const data = await response.json();
-      console.log('🎉 AppointmentBooking - AI consultation API response:', {
-        data,
-        consultationId: data.consultation?.id,
-        timestamp: new Date().toISOString()
-      });
-      
-      toast.success('AI consultation started!', {
-        description: `Starting chat with ${provider.name}`
-      });
-      
-      // Pass consultation ID back to parent instead of redirecting
-      if (onComplete) {
-        console.log('📞 AppointmentBooking - Calling onComplete with ID:', data.consultation.id);
-        onComplete(data.consultation.id);
-        console.log('✅ AppointmentBooking - onComplete called successfully');
-      } else {
-        console.log('⚠️ AppointmentBooking - onComplete callback not provided');
-      }
-    } catch (error: unknown) {
+      const result = await response.json();
+      toast.success('AI consultation started successfully!');
+      onComplete(result.consultationId);
+    } catch (error) {
       console.error('Error starting AI consultation:', error);
       toast.error('Failed to start AI consultation', {
-        description: error instanceof Error ? error.message : 'Please try again.'
+        description: error instanceof Error ? error.message : 'An unexpected error occurred.'
       });
     } finally {
       setIsBooking(false);
@@ -230,96 +226,36 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete, onC
   };
 
   const handleBookAppointment = async () => {
-    if (!selectedProvider || !reason.trim()) {
-      toast.error('Please select a provider and provide a reason for visit');
+    if (!selectedProvider || !selectedDate || !selectedTime) {
+      toast.error('Please select a provider, date, and time');
       return;
     }
-    
+
     if (!isSignedIn || !user) {
       toast.error('Please log in to book an appointment');
       return;
     }
-    
+
     setIsBooking(true);
-    
-    // Check if selected provider is an AI provider
-    if (selectedProvider.type === 'ai') {
-      try {
-        const token = await getToken();
-        const response = await fetch('/api/ai-consultations', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            aiProviderId: selectedProvider.id,
-            reasonForVisit: reason.trim(),
-            symptoms: [],
-            urgencyLevel: 1,
-          }),
-        });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to start AI consultation');
-        }
-
-        const data = await response.json();
-        console.log('🎉 AppointmentBooking - handleBookAppointment AI consultation API response:', {
-          data,
-          consultationId: data.consultation?.id,
-          timestamp: new Date().toISOString()
-        });
-        
-        toast.success('AI consultation started!', {
-          description: `Starting chat with ${selectedProvider.name}`
-        });
-        
-        // Pass consultation ID back to parent instead of redirecting
-        if (onComplete) {
-          console.log('📞 AppointmentBooking - handleBookAppointment calling onComplete with ID:', data.consultation.id);
-          onComplete(data.consultation.id);
-          console.log('✅ AppointmentBooking - handleBookAppointment onComplete called successfully');
-        } else {
-          console.log('⚠️ AppointmentBooking - handleBookAppointment onComplete callback not provided');
-        }
-        return;
-      } catch (error: unknown) {
-        console.error('Error starting AI consultation:', error);
-        toast.error('Failed to start AI consultation', {
-          description: error instanceof Error ? error.message : 'Please try again.'
-        });
-        setIsBooking(false);
-        return;
-      }
-    }
-    
-    // For human providers, require date and time
-    if (!selectedDate || !selectedTime) {
-      toast.error('Please select date and time for human provider appointment');
-      setIsBooking(false);
-      return;
-    }
-    
     try {
-      const appointmentData = {
-        patientId: user.id,
-        providerId: selectedProvider.id,
-        appointmentDate: selectedDate,
-        appointmentTime: selectedTime,
-        appointmentType: appointmentType,
-        duration: 30, // Default duration
-        symptoms: reason.trim(),
-        notes: `Appointment booked via telemedicine platform for ${selectedProvider.specialty}`
-      };
-
+      const token = await getToken();
       const response = await fetch('/api/appointments', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(appointmentData),
+        body: JSON.stringify({
+          providerId: selectedProvider.id,
+          patientId: user.id,
+          appointmentDate: selectedDate,
+          appointmentTime: selectedTime,
+          appointmentType: appointmentType,
+          reasonForVisit: reason,
+          duration: 30, // Example duration
+          totalCost: parseFloat(selectedProvider.price)
+        }),
       });
 
       if (!response.ok) {
@@ -327,302 +263,237 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete, onC
         throw new Error(errorData.error || 'Failed to book appointment');
       }
 
-      const result = await response.json();
-      
-      toast.success('Appointment booked successfully!', {
-        description: `Your appointment with ${selectedProvider.name} is scheduled for ${new Date(selectedDate).toLocaleDateString()} at ${selectedTime}`
-      });
-      
-      if (onComplete) {
-        onComplete();
-      }
-    } catch (error: unknown) {
+      await response.json();
+      toast.success('Appointment booked successfully!');
+      onComplete();
+    } catch (error) {
       console.error('Error booking appointment:', error);
       toast.error('Failed to book appointment', {
-        description: error instanceof Error ? error.message : 'Please try again or contact support if the problem persists.'
+        description: error instanceof Error ? error.message : 'An unexpected error occurred.'
       });
     } finally {
       setIsBooking(false);
     }
   };
 
-  const isFormValid = selectedProvider && reason.trim() && 
-    (selectedProvider.type === 'ai' || (selectedDate && selectedTime));
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading providers...</p>
+      <div className="flex justify-center items-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (!selectedProvider) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Book an Appointment</h1>
+        {/* Search and filter UI can be added here */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {providers.map((provider) => (
+            <Card key={provider.id} className="overflow-hidden transition-shadow duration-300 hover:shadow-lg flex flex-col">
+              <div className="relative h-48 w-full">
+                <Image 
+                  src={provider.avatar} 
+                  alt={provider.name} 
+                  layout="fill"
+                  objectFit="cover"
+                  width={300}
+                  height={300}
+                />
+                {provider.type === 'ai' && (
+                  <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full">AI</span>
+                )}
+              </div>
+              <div className="p-4 flex-grow flex flex-col">
+                <h3 className="text-lg font-semibold text-gray-900">{provider.name}</h3>
+                <p className="text-sm text-blue-600 font-medium">{provider.specialty}</p>
+                <div className="flex items-center my-2 text-sm">
+                  <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                  <span>{provider.rating} ({provider.reviews} reviews)</span>
+                </div>
+                <p className="text-sm text-gray-600 flex-grow">{provider.description}</p>
+                <div className="mt-4">
+                  <p className="text-sm text-gray-800 font-semibold">Next available: {provider.nextAvailable}</p>
+                  <p className="text-lg font-bold text-gray-900 mt-1">${provider.price}</p>
+                </div>
+              </div>
+              <div className="p-4 border-t">
+                <Button onClick={() => setSelectedProvider(provider)} className="w-full">
+                  {provider.type === 'ai' ? 'Start AI Consultation' : 'Book Appointment'}
+                </Button>
+              </div>
+            </Card>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Book Appointment</h1>
-        <p className="text-gray-600 mt-2">Schedule a consultation with a healthcare provider</p>
-      </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className="max-w-4xl mx-auto p-4 md:p-8 bg-white rounded-2xl shadow-xl border border-gray-100"
+    >
+      {/* Back Button */}
+      <Button 
+        variant="ghost" 
+        onClick={() => setSelectedProvider(null)} 
+        className="mb-6 text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-md flex items-center space-x-2"
+      >
+        <ChevronLeft className="w-5 h-5" />
+        <span>Back to all providers</span>
+      </Button>
 
-      {/* Step 1: Select Provider */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Healthcare Provider</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {providers.map((provider) => (
-            <motion.div
-              key={provider.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Card 
-                className={`p-4 cursor-pointer transition-all ${
-                  selectedProvider?.id === provider.id 
-                    ? 'ring-2 ring-blue-500 bg-blue-50' 
-                    : 'hover:shadow-md'
-                }`}
-                onClick={() => {
-                  setSelectedProvider(provider);
-                  // Don't start consultation immediately - let user fill in reason first
-                }}
-              >
-                <div className="flex items-start space-x-3">
-                  <img 
-                    src={provider.avatar || '/default-doctor.png'} 
-                    alt={provider.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{provider.name}</h3>
-                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                        provider.type === 'ai' 
-                          ? 'bg-purple-100 text-purple-700' 
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {provider.type === 'ai' ? 'AI' : 'Human'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">{provider.specialty}</p>
-                    <div className="flex items-center mt-1">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600 ml-1">
-                        {provider.rating || 4.5} ({provider.reviews || 'New'} {provider.type === 'ai' ? 'consultations' : 'reviews'})
-                      </span>
-                    </div>
-                    <p className="text-xs text-green-600 mt-1">
-                      {provider.experience && `${provider.experience}`}
-                      {provider.nextAvailable && ` • ${provider.nextAvailable}`}
-                    </p>
-                    {provider.price && (
-                      <p className="text-xs font-medium text-blue-600 mt-1">
-                        ${provider.price}/session
-                      </p>
-                    )}
-                    {provider.type === 'ai' && (
-                      <p className="text-xs font-medium text-purple-600 mt-1">
-                        Select to start consultation
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Step 2: Reason for Visit (Required for AI providers) */}
-      {selectedProvider && (
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Reason for Visit
-            {selectedProvider.type === 'ai' && (
-              <span className="text-purple-600 text-sm font-normal ml-2">
-                (Required to start AI consultation)
-              </span>
-            )}
-          </h2>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Please describe your symptoms or reason for the consultation..."
-            rows={4}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+      {/* Provider Details */}
+      <div className="flex flex-col md:flex-row items-start gap-8 mb-8">
+        <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden shadow-lg border-4 border-blue-100 flex-shrink-0">
+          <Image 
+            src={selectedProvider.avatar} 
+            alt={selectedProvider.name} 
+            layout="fill"
+            objectFit="cover"
+            width={300}
+            height={300}
           />
-          {selectedProvider.type === 'ai' && reason.trim() && (
-            <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-              <p className="text-purple-700 text-sm mb-3">
-                ✓ Ready to start consultation with {selectedProvider.name}
-              </p>
-              <Button 
-                onClick={() => handleStartAIConsultation(selectedProvider)}
-                disabled={isBooking}
-                className="w-full bg-purple-600 hover:bg-purple-700"
-              >
-                {isBooking ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Starting Consultation...
-                  </>
-                ) : (
-                  'Start AI Consultation'
-                )}
-              </Button>
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* Step 3: Select Appointment Type */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Consultation Type</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {appointmentTypes.map((type) => {
-            const IconComponent = type.icon;
-            return (
-              <Card
-                key={type.id}
-                className={`p-4 cursor-pointer transition-all ${
-                  appointmentType === type.id 
-                    ? 'ring-2 ring-blue-500 bg-blue-50' 
-                    : 'hover:shadow-md'
-                }`}
-                onClick={() => setAppointmentType(type.id as any)}
-              >
-                <div className="text-center">
-                  <IconComponent className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-                  <h3 className="font-medium text-gray-900">{type.label}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{type.description}</p>
-                </div>
-              </Card>
-            );
-          })}
         </div>
+        <div className="flex-grow">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{selectedProvider.name}</h1>
+          <p className="text-lg text-blue-600 font-semibold mt-1">{selectedProvider.specialty}</p>
+          <div className="flex items-center my-3 text-md">
+            <Star className="w-5 h-5 text-yellow-400 mr-1.5" />
+            <span>{selectedProvider.rating} ({selectedProvider.reviews} reviews)</span>
+          </div>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full">{selectedProvider.experience}</span>
+            {selectedProvider.languages.map(lang => (
+              <span key={lang} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full">{lang}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Reason for Visit */}
+      <Card className="p-6 mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Reason for Visit</h2>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Briefly describe your symptoms or reason for this consultation..."
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          rows={4}
+        />
       </Card>
 
-      {/* Step 4: Select Date & Time (Only for Human Providers) */}
-      {selectedProvider?.type !== 'ai' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* AI Consultation Immediate Start */}
+      {selectedProvider.type === 'ai' && (
+        <Card className="p-6 bg-blue-50 border-blue-200">
+          <h2 className="text-xl font-semibold text-blue-900 mb-4">Start Your AI Consultation</h2>
+          <p className="text-blue-800 mb-6">Your AI-powered consultation with {selectedProvider.name} can begin immediately. Please ensure you&apos;ve provided a reason for your visit above.</p>
+          <Button 
+            onClick={() => handleStartAIConsultation(selectedProvider)} 
+            disabled={isBooking || !reason.trim()}
+            className="w-full text-lg py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-transform transform hover:scale-105"
+          >
+            {isBooking ? (
+              <><Loader2 className="w-6 h-6 animate-spin mr-3" /> Starting...</>
+            ) : (
+              'Start Instant Consultation'
+            )}
+          </Button>
+        </Card>
+      )}
+
+      {/* Human Provider Booking Flow */}
+      {selectedProvider.type === 'human' && (
+        <div className="space-y-6">
+          {/* Step 3: Choose Appointment Type */}
           <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Date</h2>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Consultation Type</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {appointmentTypes.map((type) => {
+                const IconComponent = type.icon;
+                return (
+                  <Card
+                    key={type.id}
+                    className={`p-4 cursor-pointer transition-all ${
+                      appointmentType === type.id 
+                        ? 'ring-2 ring-blue-500 bg-blue-50' 
+                        : 'hover:shadow-md'
+                    }`}
+                    onClick={() => setAppointmentType(type.id as 'video' | 'phone' | 'chat')}
+                  >
+                    <div className="text-center">
+                      <IconComponent className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                      <h3 className="font-medium text-gray-900">{type.label}</h3>
+                      <p className="text-sm text-gray-600 mt-1">{type.description}</p>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
           </Card>
 
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Time</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {timeSlots.map((time) => (
-                <Button
-                  key={time}
-                  variant={selectedTime === time ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedTime(time)}
-                  className="text-sm"
-                >
-                  {time}
-                </Button>
-              ))}
+          {/* Step 4: Select Date & Time (Only for Human Providers) */}
+          {selectedProvider?.type !== 'ai' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Date</h2>
+                {/* Basic date picker for now, can be replaced with a proper calendar component */}
+                <input 
+                  type="date" 
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  min={new Date().toISOString().split('T')[0]} // Disable past dates
+                />
+              </Card>
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Time</h2>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {timeSlots.map(slot => (
+                    <Button 
+                      key={slot}
+                      variant={selectedTime === slot ? 'default' : 'outline'}
+                      onClick={() => setSelectedTime(slot)}
+                      className="w-full"
+                    >
+                      {slot}
+                    </Button>
+                  ))}
+                </div>
+              </Card>
             </div>
+          )}
+
+          {/* Step 5: Confirmation */}
+          <Card className="p-6 bg-gray-50">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Confirm Booking</h2>
+            <div className="space-y-3 text-gray-700">
+              <p><strong>Provider:</strong> {selectedProvider.name}</p>
+              <p><strong>Date:</strong> {selectedDate || 'Not selected'}</p>
+              <p><strong>Time:</strong> {selectedTime || 'Not selected'}</p>
+              <p><strong>Type:</strong> {appointmentType}</p>
+              <p><strong>Price:</strong> ${selectedProvider.price}</p>
+            </div>
+            <Button 
+              onClick={handleBookAppointment} 
+              disabled={isBooking || !selectedDate || !selectedTime}
+              className="w-full mt-6 text-lg py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-transform transform hover:scale-105"
+            >
+              {isBooking ? (
+                <><Loader2 className="w-6 h-6 animate-spin mr-3" /> Booking...</>
+              ) : (
+                'Confirm & Book Appointment'
+              )}
+            </Button>
           </Card>
         </div>
       )}
-      
-      {/* AI Provider Notice */}
-      {selectedProvider?.type === 'ai' && (
-        <Card className="p-6 bg-purple-50 border-purple-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-purple-600 font-semibold">AI</span>
-            </div>
-            <div>
-              <h3 className="font-semibold text-purple-900">Instant AI Consultation</h3>
-              <p className="text-purple-700 text-sm">Your chat with {selectedProvider.name} will start immediately after booking. No scheduling required!</p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-
-
-      {/* Booking Summary & Confirmation */}
-      {selectedProvider && (selectedProvider.type === 'ai' || (selectedDate && selectedTime)) && (
-        <Card className="p-6 bg-gray-50">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            {selectedProvider.type === 'ai' ? 'Consultation Summary' : 'Appointment Summary'}
-          </h2>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Provider:</span>
-              <span className="font-medium">{selectedProvider.name}</span>
-            </div>
-            {selectedProvider.type === 'ai' ? (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Type:</span>
-                  <span className="font-medium text-purple-600">Instant AI Chat</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Availability:</span>
-                  <span className="font-medium text-green-600">Available Now</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Date:</span>
-                  <span className="font-medium">{new Date(selectedDate).toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Time:</span>
-                  <span className="font-medium">{selectedTime}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Type:</span>
-                  <span className="font-medium">
-                    {appointmentTypes.find(t => t.id === appointmentType)?.label}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex justify-end space-x-4">
-        <Button 
-          variant="outline" 
-          onClick={onCancel || (() => window.history.back())}
-          disabled={isBooking}
-        >
-          Cancel
-        </Button>
-        <Button 
-          onClick={handleBookAppointment}
-          disabled={!isFormValid || isBooking}
-          className="bg-blue-600 hover:bg-blue-700 text-white border-0"
-        >
-          {isBooking ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {selectedProvider?.type === 'ai' ? 'Starting Chat...' : 'Booking...'}
-            </>
-          ) : (
-            selectedProvider?.type === 'ai' ? 'Start AI Chat' : 'Book Appointment'
-          )}
-        </Button>
-      </div>
-    </div>
+    </motion.div>
   );
 };
 
