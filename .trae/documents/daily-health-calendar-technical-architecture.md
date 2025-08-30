@@ -40,96 +40,113 @@ graph TD
 
 ## 2. Technology Description
 
-- **Frontend**: React@18 + Next.js@14 + TypeScript + Tailwind CSS + Lucide React Icons
-- **Backend**: Next.js API Routes + Drizzle ORM + Node.js
-- **Database**: Supabase (PostgreSQL) with existing schema extensions
-- **Authentication**: Clerk (existing integration)
-- **Real-time**: WebSocket integration for live updates
-- **Email**: Resend API for automated notifications
-- **Charts**: Chart.js for health analytics visualization
-- **State Management**: React Context + Zustand for calendar state
+* **Frontend**: React\@18 + Next.js\@14 + TypeScript + Tailwind CSS + Lucide React Icons
+
+* **Backend**: Next.js API Routes + Drizzle ORM + Node.js
+
+* **Database**: Supabase (PostgreSQL) with existing schema extensions
+
+* **Authentication**: Clerk (existing integration)
+
+* **Real-time**: WebSocket integration for live updates
+
+* **Email**: Resend API for automated notifications
+
+* **Charts**: Chart.js for health analytics visualization
+
+* **State Management**: React Context + Zustand for calendar state
 
 ## 3. Route Definitions
 
-| Route | Purpose |
-|-------|---------|
-| /health-calendar | Main calendar dashboard with daily check-in interface |
-| /health-calendar/checkin | Daily check-in form for symptom and wellness logging |
-| /health-calendar/analytics | Health patterns and trend analysis page |
-| /health-calendar/notifications | Notification center and alert management |
-| /health-calendar/event/[id] | Individual health event details and tracking |
-| /api/health-calendar/* | API endpoints for calendar operations |
-| /api/notifications/health | Health notification management endpoints |
-| /api/analytics/health-patterns | Health pattern analysis and insights |
+| Route                          | Purpose                                               |
+| ------------------------------ | ----------------------------------------------------- |
+| /health-calendar               | Main calendar dashboard with daily check-in interface |
+| /health-calendar/checkin       | Daily check-in form for symptom and wellness logging  |
+| /health-calendar/analytics     | Health patterns and trend analysis page               |
+| /health-calendar/notifications | Notification center and alert management              |
+| /health-calendar/event/\[id]   | Individual health event details and tracking          |
+| /api/health-calendar/\*        | API endpoints for calendar operations                 |
+| /api/notifications/health      | Health notification management endpoints              |
+| /api/analytics/health-patterns | Health pattern analysis and insights                  |
 
 ## 4. API Definitions
 
 ### 4.1 Core API Endpoints
 
 **Daily Check-in Management**
+
 ```
 POST /api/health-calendar/checkin
 ```
 
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| symptoms | array | false | Array of symptom objects with type, severity, notes |
-| medications | array | false | Array of medication intake records |
-| wellnessMetrics | object | false | Mood, energy, sleep quality scores |
-| customMetrics | object | false | User-defined health tracking metrics |
+
+| Param Name      | Param Type | isRequired | Description                                         |
+| --------------- | ---------- | ---------- | --------------------------------------------------- |
+| symptoms        | array      | false      | Array of symptom objects with type, severity, notes |
+| medications     | array      | false      | Array of medication intake records                  |
+| wellnessMetrics | object     | false      | Mood, energy, sleep quality scores                  |
+| customMetrics   | object     | false      | User-defined health tracking metrics                |
 
 Response:
-| Param Name | Param Type | Description |
-|------------|------------|-------------|
-| success | boolean | Operation status |
-| streakCount | number | Updated daily check-in streak |
-| checkInId | string | Created check-in record ID |
+
+| Param Name  | Param Type | Description                   |
+| ----------- | ---------- | ----------------------------- |
+| success     | boolean    | Operation status              |
+| streakCount | number     | Updated daily check-in streak |
+| checkInId   | string     | Created check-in record ID    |
 
 **Health Event Tracking**
+
 ```
 POST /api/health-calendar/events
 ```
 
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| eventType | string | true | Type of health event (symptom, medication, etc.) |
-| severity | number | false | Severity scale 1-10 |
-| startDate | string | true | Event start date (ISO format) |
-| notes | string | false | Additional notes or context |
+
+| Param Name | Param Type | isRequired | Description                                      |
+| ---------- | ---------- | ---------- | ------------------------------------------------ |
+| eventType  | string     | true       | Type of health event (symptom, medication, etc.) |
+| severity   | number     | false      | Severity scale 1-10                              |
+| startDate  | string     | true       | Event start date (ISO format)                    |
+| notes      | string     | false      | Additional notes or context                      |
 
 **Pattern Analysis**
+
 ```
 GET /api/analytics/health-patterns
 ```
 
 Query Parameters:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| startDate | string | false | Analysis start date |
-| endDate | string | false | Analysis end date |
-| eventTypes | string | false | Comma-separated event types to analyze |
+
+| Param Name | Param Type | isRequired | Description                            |
+| ---------- | ---------- | ---------- | -------------------------------------- |
+| startDate  | string     | false      | Analysis start date                    |
+| endDate    | string     | false      | Analysis end date                      |
+| eventTypes | string     | false      | Comma-separated event types to analyze |
 
 Response:
-| Param Name | Param Type | Description |
-|------------|------------|-------------|
-| patterns | array | Detected health patterns and correlations |
-| alerts | array | Active health alerts requiring attention |
-| trends | object | Statistical trends and insights |
+
+| Param Name | Param Type | Description                               |
+| ---------- | ---------- | ----------------------------------------- |
+| patterns   | array      | Detected health patterns and correlations |
+| alerts     | array      | Active health alerts requiring attention  |
+| trends     | object     | Statistical trends and insights           |
 
 **Notification Management**
+
 ```
 POST /api/notifications/health/configure
 ```
 
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| persistenceThreshold | number | false | Days before persistence alert (default: 5) |
-| emailEnabled | boolean | false | Enable email notifications |
-| reminderTimes | array | false | Daily reminder times |
-| criticalAlerts | boolean | false | Enable critical health alerts |
+
+| Param Name           | Param Type | isRequired | Description                                |
+| -------------------- | ---------- | ---------- | ------------------------------------------ |
+| persistenceThreshold | number     | false      | Days before persistence alert (default: 5) |
+| emailEnabled         | boolean    | false      | Enable email notifications                 |
+| reminderTimes        | array      | false      | Daily reminder times                       |
+| criticalAlerts       | boolean    | false      | Enable critical health alerts              |
 
 ## 5. Server Architecture Diagram
 
@@ -283,6 +300,7 @@ erDiagram
 ### 6.2 Data Definition Language
 
 **Daily Check-ins Table**
+
 ```sql
 -- Daily check-ins tracking
 CREATE TABLE daily_checkins (
@@ -305,6 +323,7 @@ CREATE INDEX idx_daily_checkins_date ON daily_checkins(checkin_date DESC);
 ```
 
 **Health Events Table**
+
 ```sql
 -- Health events and symptom tracking
 CREATE TABLE health_events (
@@ -337,6 +356,7 @@ CREATE INDEX idx_health_events_duration ON health_events(user_id, duration_days 
 ```
 
 **Check-in Symptoms Table**
+
 ```sql
 -- Symptoms logged during daily check-ins
 CREATE TABLE checkin_symptoms (
@@ -357,6 +377,7 @@ CREATE INDEX idx_checkin_symptoms_type ON checkin_symptoms(symptom_type);
 ```
 
 **Check-in Medications Table**
+
 ```sql
 -- Medications logged during daily check-ins
 CREATE TABLE checkin_medications (
@@ -381,6 +402,7 @@ CREATE INDEX idx_checkin_medications_taken_at ON checkin_medications(taken_at DE
 ```
 
 **Health Notifications Table**
+
 ```sql
 -- Health-related notifications and alerts
 CREATE TABLE health_notifications (
@@ -408,6 +430,7 @@ CREATE INDEX idx_health_notifications_type ON health_notifications(notification_
 ```
 
 **Streak Records Table**
+
 ```sql
 -- User streak tracking for gamification
 CREATE TABLE streak_records (
@@ -429,6 +452,7 @@ CREATE INDEX idx_streak_records_active ON streak_records(user_id, is_active, cur
 ```
 
 **Health Pattern Analysis Table**
+
 ```sql
 -- AI-detected health patterns and correlations
 CREATE TABLE health_patterns (
@@ -451,6 +475,7 @@ CREATE INDEX idx_health_patterns_type ON health_patterns(pattern_type, confidenc
 ```
 
 **Initial Data and Triggers**
+
 ```sql
 -- Function to update streak records
 CREATE OR REPLACE FUNCTION update_streak_record(p_user_id TEXT, p_streak_type VARCHAR(50))
@@ -512,11 +537,15 @@ CREATE TRIGGER update_checkin_streak_trigger
 
 ### 7.1 Existing System Integration
 
-- **AI Consultations**: Calendar data accessible via `aiConsultations.metadata` for enhanced context
-- **Provider Dashboard**: Health patterns visible in provider interface for better patient care
-- **Notification Queue**: Leverage existing `notificationQueue` table for email delivery
-- **User Analytics**: Extend `userAnalytics` to include calendar engagement metrics
-- **WebSocket**: Use existing `websocketConnections` for real-time calendar updates
+* **AI Consultations**: Calendar data accessible via `aiConsultations.metadata` for enhanced context
+
+* **Provider Dashboard**: Health patterns visible in provider interface for better patient care
+
+* **Notification Queue**: Leverage existing `notificationQueue` table for email delivery
+
+* **User Analytics**: Extend `userAnalytics` to include calendar engagement metrics
+
+* **WebSocket**: Use existing `websocketConnections` for real-time calendar updates
 
 ### 7.2 Email Notification Integration
 
@@ -546,3 +575,4 @@ type CalendarWebSocketEvent =
   | { type: 'PATTERN_DETECTED'; data: { userId: string; patternType: string } }
   | { type: 'STREAK_MILESTONE'; data: { userId: string; milestone: number } };
 ```
+
