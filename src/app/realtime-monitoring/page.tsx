@@ -5,9 +5,9 @@ import { useUser } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
 import RealtimeDashboard from '@/components/RealtimeDashboard';
 import HealthDataInput from '@/components/HealthDataInput';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { 
   Activity, 
   Brain, 
