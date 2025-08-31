@@ -155,7 +155,7 @@ const Select = ({ children, value, onValueChange, ...props }: {
     <div className="relative" {...props}>
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child, {
+          return React.cloneElement(child as React.ReactElement<any>, {
             isOpen,
             setIsOpen,
             selectedValue,
@@ -174,7 +174,7 @@ const SelectTrigger = ({ children, className = '', isOpen, setIsOpen, ...props }
   className?: string;
   isOpen?: boolean;
   setIsOpen?: (open: boolean) => void;
-  [key: string]: any;
+  [key: string]: React.ReactNode | string | boolean | ((open: boolean) => void) | undefined;
 }) => (
   <button
     type="button"
