@@ -251,7 +251,7 @@ export default function AiConsultationChatPage() {
 
   const { getToken } = useAuth();
 
-  const fetchConsultation = async (consultationId: string) => {
+  async function fetchConsultation(consultationId: string) {
     try {
       setLoading(true);
       console.log('🔄 Fetching consultation:', consultationId);
@@ -307,7 +307,7 @@ export default function AiConsultationChatPage() {
     }
   };
 
-  const fetchMessages = async (consultationId: string) => {
+  async function fetchMessages(consultationId: string) {
     try {
       setMessagesLoading(true);
       console.log('💬 Fetching messages for consultation:', consultationId);
