@@ -7,10 +7,11 @@ import { eq, and } from 'drizzle-orm';
 // GET /api/provider-handoffs/[id] - Get specific handoff
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
+    const { id } = await params;
     
     if (!userId) {
       return NextResponse.json(
@@ -28,7 +29,7 @@ export async function GET(
       .from(providerHandoffs)
       .leftJoin(aiConsultations, eq(providerHandoffs.aiConsultationId, aiConsultations.id))
       .leftJoin(healthcareProviders, eq(providerHandoffs.toHumanProviderId, healthcareProviders.id))
-      .where(eq(providerHandoffs.id, params.id))
+      .where(eq(providerHandoffs.id, id))
       .limit(1);
 
     if (handoff.length === 0) {
@@ -67,8 +68,9 @@ export async function GET(
 // PUT /api/provider-handoffs/[id] - Update handoff status
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const { userId } = await auth();
     
@@ -225,8 +227,9 @@ export async function PUT(
 // DELETE /api/provider-handoffs/[id] - Cancel handoff
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const { userId } = await auth();
     

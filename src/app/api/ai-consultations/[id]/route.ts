@@ -5,9 +5,9 @@ import { eq, and, desc } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function GET(

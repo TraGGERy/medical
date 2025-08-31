@@ -174,7 +174,7 @@ const SelectTrigger = ({ children, className = '', isOpen, setIsOpen, ...props }
   className?: string;
   isOpen?: boolean;
   setIsOpen?: (open: boolean) => void;
-  [key: string]: React.ReactNode | string | boolean | ((open: boolean) => void) | undefined;
+  [key: string]: any;
 }) => (
   <button
     type="button"

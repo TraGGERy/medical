@@ -90,11 +90,11 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const { user } = useUser();
-  const router = useRouter();
+  // const router = useRouter(); // Reserved for future navigation
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedReport] = useState(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [bookingLoading, setBookingLoading] = useState(false);
+  // const [bookingLoading, setBookingLoading] = useState(false); // Reserved for booking state
   const [activeConsultationId, setActiveConsultationId] = useState<string | null>(null);
   const [isLoadingLastConsultation, setIsLoadingLastConsultation] = useState(false);
 

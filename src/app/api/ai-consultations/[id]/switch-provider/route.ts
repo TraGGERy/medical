@@ -3,9 +3,10 @@ import { db } from '@/lib/db';
 import { aiConsultations, consultationMessages, aiProviders } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
-    const consultationId = params.id;
+    const consultationId = id;
     const { newProviderId, reason, transferContext } = await request.json();
 
     if (!newProviderId) {
@@ -129,9 +130,10 @@ Hello! I'm ${newProvider[0].name}, a ${newProvider[0].specialty} specialist. I'v
 }
 
 // GET endpoint to get available providers for switching
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
-    const consultationId = params.id;
+    const consultationId = id;
     const { searchParams } = new URL(request.url);
     const specialty = searchParams.get('specialty');
 

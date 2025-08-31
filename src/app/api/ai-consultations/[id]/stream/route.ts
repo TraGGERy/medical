@@ -4,10 +4,10 @@ import { db } from '@/lib/db';
 import { aiConsultations, consultationMessages } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { userId } = await auth();
-    const consultationId = params.id;
+    const { id: consultationId } = await params;
     
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });

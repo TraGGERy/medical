@@ -49,7 +49,8 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
 Button.displayName = "Button"
 
 export default function HomePage() {
-  const [isLoading, setIsLoading] = useState(false);
+  // Loading state for future use
+  // const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
   const { isSignedIn, isLoaded } = useUser();

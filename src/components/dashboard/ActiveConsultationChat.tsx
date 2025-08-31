@@ -258,7 +258,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         console.log('⏰ Conversation timing initialized with start time:', conversationStartTime);
       }
     }
-  }, [consultationId, isSignedIn, userId, fetchConsultation, fetchMessages]);
+  }, [consultationId, isSignedIn, userId, consultation, fetchConsultation, fetchMessages, fetchAvailableDoctors]);
 
   // Initialize scroll position check
   useEffect(() => {

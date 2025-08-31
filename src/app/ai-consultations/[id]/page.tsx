@@ -93,6 +93,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ value, 
     className={`flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
   />
 ));
+Textarea.displayName = "Textarea";
 
 interface BadgeProps {
   children: React.ReactNode;
@@ -115,15 +116,10 @@ const Badge = ({ children, variant = 'default', className = '' }: BadgeProps) =>
   );
 };
 
-const Separator = ({ className = '' }: { className?: string }) => (
-  <div className={`shrink-0 bg-border h-[1px] w-full ${className}`} />
-);
 import { 
   Send, 
   ArrowLeft, 
   User, 
-  Bot, 
-  Clock, 
   AlertCircle, 
   CheckCircle, 
   Phone, 
@@ -213,7 +209,7 @@ export default function AiConsultationChatPage() {
       fetchConsultation(params.id as string);
       fetchMessages(params.id as string);
     }
-  }, [params.id, isSignedIn, userId]);
+  }, [params.id, isSignedIn, userId, fetchConsultation, fetchMessages, router]);
 
   useEffect(() => {
     scrollToBottom();
@@ -237,7 +233,7 @@ export default function AiConsultationChatPage() {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [aiResponsePending, consultation]);
+  }, [aiResponsePending, consultation, fetchMessages]);
 
   // Check if AI response arrived
   useEffect(() => {
