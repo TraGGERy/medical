@@ -152,7 +152,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Build query conditions
-    const whereConditions: (SQL<unknown> | undefined)[] = [
+    const whereConditions = [
       eq(aiProviders.isActive, true),
       eq(aiProviders.isAvailable, true)
     ];
