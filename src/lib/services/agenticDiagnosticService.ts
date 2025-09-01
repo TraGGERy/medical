@@ -84,7 +84,7 @@ export class AgenticDiagnosticService {
       console.error('Error analyzing conversation completion:', error);
       
       // Fallback to rule-based analysis
-      return this.fallbackCompletionAnalysis(messages, consultationContext);
+      return this.fallbackCompletionAnalysis(messages);
     }
   }
 
@@ -139,7 +139,7 @@ export class AgenticDiagnosticService {
         return {
           shouldTrigger: true,
           triggerReason: completionAnalysis.reasoning,
-          userNotification: this.generateUserNotification(completionAnalysis),
+          userNotification: this.generateUserNotification(),
           diagnosticData,
           confidence: completionAnalysis.confidence
         };
@@ -265,7 +265,7 @@ Be conservative - only mark as complete if you're confident the consultation has
     }
     
     // Fallback response
-    return this.fallbackCompletionAnalysis([], {});
+    return this.fallbackCompletionAnalysis([]);
   }
 
   /**
@@ -333,7 +333,7 @@ Be conservative - only mark as complete if you're confident the consultation has
    */
   reset(): void {
     this.dataCollector.reset();
-    this.completenessDetector.reset();
+// Skip resetting completeness detector since it doesn't maintain state
     this.conversationStartTime = Date.now();
     this.lastAnalysisTime = 0;
   }

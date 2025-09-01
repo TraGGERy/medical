@@ -1,11 +1,15 @@
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 import { createServer } from 'http';
+
+interface AuthenticatedSocket extends Socket {
+  userId: string;
+}
 
 // WebSocket server instance
 let io: SocketIOServer | null = null;
 
 // Store active connections by user ID
-const userConnections = new Map<string, Set<string>>();
+export const userConnections = new Map<string, Set<string>>();
 
 // Initialize WebSocket server
 export function initializeWebSocketServer() {
@@ -21,7 +25,7 @@ export function initializeWebSocketServer() {
   });
 
   // Authentication middleware
-  io.use(async (socket, next) => {
+  io.use(async (socket: Socket, next) => {
     try {
       const userId = socket.handshake.auth.userId;
 
@@ -29,7 +33,7 @@ export function initializeWebSocketServer() {
         return next(new Error('Authentication failed: No user ID'));
       }
 
-      socket.userId = userId;
+      (socket as AuthenticatedSocket).userId = userId;
       next();
     } catch (error) {
       console.error('WebSocket authentication error:', error);
@@ -38,8 +42,8 @@ export function initializeWebSocketServer() {
   });
 
   // Handle connections
-  io.on('connection', (socket) => {
-    const userId = socket.userId;
+  io.on('connection', (socket: Socket) => {
+    const userId = (socket as AuthenticatedSocket).userId;
     console.log(`User ${userId} connected via WebSocket`);
 
     // Add to user connections

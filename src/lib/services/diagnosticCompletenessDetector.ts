@@ -30,12 +30,12 @@ export class DiagnosticCompletenessDetector {
     
     // Respect cooldown period to avoid spam
     if (now - this.lastCheckTimestamp < this.checkCooldown) {
-      return this.createNegativeResult('Cooldown period active');
+      return this.createNegativeResult();
     }
 
     // Need minimum messages for meaningful analysis
     if (this.messagesSinceLastCheck < this.minMessagesForCheck) {
-      return this.createNegativeResult('Insufficient conversation data');
+      return this.createNegativeResult();
     }
 
     const completeness = this.dataCollector.checkCompleteness();

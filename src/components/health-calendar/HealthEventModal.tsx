@@ -474,7 +474,7 @@ const HealthEventModal: React.FC<HealthEventModalProps> = ({
                     <label className="text-sm sm:text-base font-medium text-gray-900">Dosage</label>
                     <input
                       type="text"
-                      value={formData.metadata?.dosage || ''}
+                      value={(formData.metadata?.dosage as string) ?? ''}
                       onChange={(e) => handleMetadataChange('dosage', e.target.value)}
                       placeholder="e.g., 10mg, 2 tablets"
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent touch-manipulation"
@@ -483,7 +483,7 @@ const HealthEventModal: React.FC<HealthEventModalProps> = ({
                   <div className="space-y-2">
                     <label className="text-sm sm:text-base font-medium text-gray-900">Route</label>
                     <select
-                      value={formData.metadata?.route || ''}
+                      value={(formData.metadata?.route as string) ?? ''}
                       onChange={(e) => handleMetadataChange('route', e.target.value)}
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent touch-manipulation"
                     >
@@ -504,7 +504,7 @@ const HealthEventModal: React.FC<HealthEventModalProps> = ({
                     <label className="text-sm sm:text-base font-medium text-gray-900">Value</label>
                     <input
                       type="text"
-                      value={formData.metadata?.value || ''}
+                      value={(formData.metadata?.value as string) ?? ''}
                       onChange={(e) => handleMetadataChange('value', e.target.value)}
                       placeholder="e.g., 120/80, 98.6°F, 150 lbs"
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent touch-manipulation"
@@ -514,7 +514,7 @@ const HealthEventModal: React.FC<HealthEventModalProps> = ({
                     <label className="text-sm sm:text-base font-medium text-gray-900">Unit</label>
                     <input
                       type="text"
-                      value={formData.metadata?.unit || ''}
+                      value={(formData.metadata?.unit as string) ?? ''}
                       onChange={(e) => handleMetadataChange('unit', e.target.value)}
                       placeholder="e.g., mmHg, °F, lbs"
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent touch-manipulation"

@@ -226,6 +226,152 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   const doctorSwitchRef = useRef<HTMLDivElement>(null);
   const diagnosticDetectorRef = useRef<DiagnosticCompletenessDetector | null>(null);
 
+  const fetchAvailableDoctors = useCallback(async (consultationId: string) => {
+    try {
+      setLoadingDoctors(true);
+      console.log('🔄 Fetching available doctors for consultation:', consultationId);
+      
+      const token = await getToken();
+      const response = await fetch(`/api/ai-consultations/${consultationId}/switch-provider`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        console.warn('⚠️ Failed to fetch available doctors:', response.status);
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('✅ Available doctors received:', {
+        count: data.providers?.length || 0,
+        currentProviderId: data.currentProviderId
+      });
+      
+      setAvailableDoctors(data.providers || []);
+    } catch (error: unknown) {
+      console.error('💥 Error fetching available doctors:', error);
+    } finally {
+      setLoadingDoctors(false);
+    }
+  }, [getToken]);
+
+  const fetchConsultation = useCallback(async (consultationId: string) => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching consultation:', consultationId);
+      
+      const token = await getToken();
+      console.log('🔑 Auth token obtained:', token ? 'Yes' : 'No');
+      
+      const response = await fetch(`/api/ai-consultations/${consultationId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      console.log('📡 API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        url: response.url
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('❌ API Error Response:', errorText);
+        
+        if (response.status === 404) {
+          console.log('🚫 Consultation not found');
+          toast.error('Consultation not found');
+          return;
+        }
+        if (response.status === 401) {
+          console.log('🔒 Unauthorized');
+          toast.error('Please sign in to access this consultation');
+          return;
+        }
+        throw new Error(`Failed to fetch consultation: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Consultation data received:', {
+        consultationId: data.consultation?.id,
+        status: data.consultation?.status,
+        aiProvider: data.consultation?.aiProvider?.name
+      });
+      
+      setConsultation(data.consultation);
+    } catch (error: unknown) {
+      console.error('💥 Error fetching consultation:', error);
+      toast.error('Failed to load consultation');
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
+  const fetchMessages = useCallback(async (consultationId: string, isPolling = false) => {
+    try {
+      if (!isPolling) {
+        setMessagesLoading(true);
+      }
+      console.log('🔄 Fetching messages for consultation:', consultationId);
+
+      const token = await getToken();
+      const response = await fetch(`/api/ai-consultations/${consultationId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        // Add timeout for polling requests
+        signal: isPolling ? AbortSignal.timeout(5000) : undefined
+      });
+
+      if (!response.ok) {
+        // Don't show error toast for polling failures to avoid spam
+        if (!isPolling) {
+          throw new Error('Failed to fetch messages');
+        }
+        console.warn('⚠️ Polling request failed:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('✅ Messages received:', {
+        count: data.messages?.length || 0,
+        consultationId
+      });
+
+      // Filter out any invalid messages to prevent undefined errors
+      const validMessages = (data.messages || []).filter((message: Message) => 
+        message && 
+        message.id && 
+        message.senderType && 
+        message.content !== undefined
+      );
+
+      console.log('📋 Valid messages after filtering:', validMessages.map((msg: Message) => ({
+        id: msg.id,
+        senderType: msg.senderType,
+        content: msg.content?.substring(0, 30) + '...',
+        createdAt: msg.createdAt
+      })));
+
+      setMessages(validMessages);
+    } catch (error: unknown) {
+      console.error('💥 Error fetching messages:', error);
+      // Only show error toast for non-polling requests
+      if (!isPolling) {
+        toast.error('Failed to load messages');
+      }
+    } finally {
+      if (!isPolling) {
+        setMessagesLoading(false);
+      }
+    }
+  }, [getToken]);
+
   useEffect(() => {
     console.log('🔍 Active Consultation Chat - Authentication Check:', {
       isSignedIn,
@@ -259,6 +405,25 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       }
     }
   }, [consultationId, isSignedIn, userId, consultation, fetchConsultation, fetchMessages, fetchAvailableDoctors]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowScrollToBottom(false);
+  };
+
+  // Check if user is at bottom of chat
+  const checkIfAtBottom = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      const threshold = 100; // 100px threshold
+      const atBottom = scrollHeight - scrollTop - clientHeight < threshold;
+      setIsUserAtBottom(atBottom);
+      
+      if (atBottom) {
+        setShowScrollToBottom(false);
+      }
+    }
+  };
 
   // Initialize scroll position check
   useEffect(() => {
@@ -486,9 +651,6 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
 
     // Only proceed with diagnostic detection if no quick response confirmation is pending and no auto-generation is active
     if (!showQuickResponseDialog && !isGeneratingReport) {
-      // Notify detector about message processing
-      diagnosticDetectorRef.current.onMessageProcessed();
-
       // Check if we should trigger diagnostic report generation
       const triggerResult = diagnosticDetectorRef.current.shouldTriggerDiagnostic();
       
@@ -676,175 +838,10 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
     };
   }, [showDoctorSwitch]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    setShowScrollToBottom(false);
-  };
-
-  // Check if user is at bottom of chat
-  const checkIfAtBottom = () => {
-    if (chatContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-      const threshold = 100; // 100px threshold
-      const atBottom = scrollHeight - scrollTop - clientHeight < threshold;
-      setIsUserAtBottom(atBottom);
-      
-      if (atBottom) {
-        setShowScrollToBottom(false);
-      }
-    }
-  };
-
   // Handle scroll events
   const handleScroll = () => {
     checkIfAtBottom();
   };
-
-  const fetchAvailableDoctors = useCallback(async (consultationId: string) => {
-    try {
-      setLoadingDoctors(true);
-      console.log('🔄 Fetching available doctors for consultation:', consultationId);
-      
-      const token = await getToken();
-      const response = await fetch(`/api/ai-consultations/${consultationId}/switch-provider`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) {
-        console.warn('⚠️ Failed to fetch available doctors:', response.status);
-        return;
-      }
-      
-      const data = await response.json();
-      console.log('✅ Available doctors received:', {
-        count: data.providers?.length || 0,
-        currentProviderId: data.currentProviderId
-      });
-      
-      setAvailableDoctors(data.providers || []);
-    } catch (error: unknown) {
-      console.error('💥 Error fetching available doctors:', error);
-    } finally {
-      setLoadingDoctors(false);
-    }
-  }, [getToken]);
-
-  const fetchConsultation = useCallback(async (consultationId: string) => {
-    try {
-      setLoading(true);
-      console.log('🔄 Fetching consultation:', consultationId);
-      
-      const token = await getToken();
-      console.log('🔑 Auth token obtained:', token ? 'Yes' : 'No');
-      
-      const response = await fetch(`/api/ai-consultations/${consultationId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      console.log('📡 API Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        url: response.url
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('❌ API Error Response:', errorText);
-        
-        if (response.status === 404) {
-          console.log('🚫 Consultation not found');
-          toast.error('Consultation not found');
-          return;
-        }
-        if (response.status === 401) {
-          console.log('🔒 Unauthorized');
-          toast.error('Please sign in to access this consultation');
-          return;
-        }
-        throw new Error(`Failed to fetch consultation: ${response.status} ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ Consultation data received:', {
-        consultationId: data.consultation?.id,
-        status: data.consultation?.status,
-        aiProvider: data.consultation?.aiProvider?.name
-      });
-      
-      setConsultation(data.consultation);
-    } catch (error: unknown) {
-      console.error('💥 Error fetching consultation:', error);
-      toast.error('Failed to load consultation');
-    } finally {
-      setLoading(false);
-    }
-  }, [getToken]);
-
-  const fetchMessages = useCallback(async (consultationId: string, isPolling = false) => {
-    try {
-      if (!isPolling) {
-        setMessagesLoading(true);
-      }
-      console.log('🔄 Fetching messages for consultation:', consultationId);
-
-      const token = await getToken();
-      const response = await fetch(`/api/ai-consultations/${consultationId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        // Add timeout for polling requests
-        signal: isPolling ? AbortSignal.timeout(5000) : undefined
-      });
-
-      if (!response.ok) {
-        // Don't show error toast for polling failures to avoid spam
-        if (!isPolling) {
-          throw new Error('Failed to fetch messages');
-        }
-        console.warn('⚠️ Polling request failed:', response.status);
-        return;
-      }
-
-      const data = await response.json();
-      console.log('✅ Messages received:', {
-        count: data.messages?.length || 0,
-        consultationId
-      });
-
-      // Filter out any invalid messages to prevent undefined errors
-      const validMessages = (data.messages || []).filter((message: Message) => 
-        message && 
-        message.id && 
-        message.senderType && 
-        message.content !== undefined
-      );
-
-      console.log('📋 Valid messages after filtering:', validMessages.map((msg: Message) => ({
-        id: msg.id,
-        senderType: msg.senderType,
-        content: msg.content?.substring(0, 30) + '...',
-        createdAt: msg.createdAt
-      })));
-
-      setMessages(validMessages);
-    } catch (error: unknown) {
-      console.error('💥 Error fetching messages:', error);
-      // Only show error toast for non-polling requests
-      if (!isPolling) {
-        toast.error('Failed to load messages');
-      }
-    } finally {
-      if (!isPolling) {
-        setMessagesLoading(false);
-      }
-    }
-  }, [getToken]);
 
   const sendMessage = async (retryCount = 0) => {
     if (!newMessage.trim() || !consultation || sendingMessage) {
@@ -1005,7 +1002,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       setConsultation(prev => prev ? {
         ...prev,
         status: 'completed',
-        totalCost: data.consultation.totalCost
+        totalCost: `${data.consultation.totalCost}`
       } : null);
       
       // Show success message with information about the full diagnostic report
@@ -1103,7 +1100,6 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       
       // Reset the data collector for future use
       conversationDataCollector.reset();
-      diagnosticDetectorRef.current?.reset();
       
     } catch (error: unknown) {
       console.error('💥 Error generating diagnostic report:', error);
@@ -1131,7 +1127,6 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
       
       // Check if diagnostic trigger conditions are now met
       if (diagnosticDetectorRef.current) {
-        diagnosticDetectorRef.current.onMessageProcessed();
         const triggerResult = diagnosticDetectorRef.current.shouldTriggerDiagnostic();
         
         if (triggerResult.shouldTrigger && !showDiagnosticDialog && !isGeneratingReport) {

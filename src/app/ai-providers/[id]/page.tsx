@@ -172,7 +172,7 @@ const Select = ({ value, onValueChange, children }: SelectProps) => {
     <div className="relative">
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement<any>, {
+          return React.cloneElement(child as React.ReactElement<SelectTriggerProps>, {
             value,
             onValueChange,
             isOpen,
@@ -190,6 +190,7 @@ interface SelectTriggerProps {
   children: React.ReactNode;
   className?: string;
   value?: string;
+  onValueChange?: (value: string) => void;
   isOpen?: boolean;
   setIsOpen?: (open: boolean) => void;
 }
@@ -228,7 +229,7 @@ const SelectContentWrapper = ({ children, isOpen, setIsOpen, onValueChange }: Se
       <div className="p-1">
         {React.Children.map(children, child => {
           if (React.isValidElement(child)) {
-            return React.cloneElement(child, {
+            return React.cloneElement(child as React.ReactElement<{ onValueChange?: (value: string) => void; setIsOpen?: (open: boolean) => void; }>, {
               onValueChange,
               setIsOpen
             });
@@ -281,7 +282,7 @@ const SelectContent = ({ children, value, onValueChange, isOpen, setIsOpen }: Se
     <div className="absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95">
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child, {
+          return React.cloneElement(child as React.ReactElement<SelectItemProps>, {
             onValueChange,
             setIsOpen
           });

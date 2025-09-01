@@ -53,17 +53,17 @@ const HealthCalendarDashboard: React.FC = () => {
     onHealthEventUpdate: (event: HealthCalendarEvent) => {
       console.log('Received health event update:', event);
       if (event.type === 'health_event_created') {
-        handleRealTimeEventCreated(event.data as HealthEvent);
+        handleRealTimeEventCreated(event.data as unknown as HealthEvent);
       } else if (event.type === 'health_event_updated') {
-        handleRealTimeEventUpdated(event.data as HealthEvent);
+        handleRealTimeEventUpdated(event.data as unknown as HealthEvent);
       } else if (event.type === 'health_event_deleted') {
-        handleRealTimeEventDeleted(event.data as HealthEvent);
+        handleRealTimeEventDeleted(event.data as { id: string });
       }
     },
     onDailyCheckinUpdate: (event: HealthCalendarEvent) => {
       console.log('Received daily checkin update:', event);
       if (event.type === 'daily_checkin_created' || event.type === 'daily_checkin_updated') {
-        handleRealTimeCheckinUpdate(event.data as DailyCheckin);
+        handleRealTimeCheckinUpdate(event.data as unknown as DailyCheckin);
       }
     },
     onNotificationUpdate: (event: HealthCalendarEvent) => {

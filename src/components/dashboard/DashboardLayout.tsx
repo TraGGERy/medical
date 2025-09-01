@@ -30,6 +30,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  activeConsultationId?: string;
 }
 
 export default function DashboardLayout({ children, activeTab, onTabChange }: DashboardLayoutProps) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { TrendingUp, BarChart3, Brain, Calendar, Zap, Heart, Moon, Activity, RefreshCw, Loader2 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { useUser } from '@clerk/nextjs';
@@ -58,12 +58,6 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
     '3months': { label: 'Last 3 Months', days: 90 }
   }), []);
 
-  useEffect(() => {
-    if (user) {
-      loadAnalyticsData();
-    }
-  }, [user, selectedTimeRange, loadAnalyticsData]);
-
   const loadAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
@@ -88,6 +82,12 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
       setLoading(false);
     }
   }, [selectedTimeRange, timeRanges, setLoading, setData]);
+
+  useEffect(() => {
+    if (user) {
+      loadAnalyticsData();
+    }
+  }, [user, selectedTimeRange, loadAnalyticsData]);
 
   const runPatternAnalysis = async () => {
     try {
@@ -176,7 +176,7 @@ const HealthPatternsAnalytics: React.FC<HealthPatternsAnalyticsProps> = ({ class
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <select
               value={selectedTimeRange}
-              onChange={(e) => setSelectedTimeRange(e.target.value as TimeRangeKey)}
+              onChange={(e) => setSelectedTimeRange(e.target.value as 'week' | 'month' | '3months')}
               className="px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent touch-manipulation text-base sm:text-sm"
             >
               {Object.entries(timeRanges).map(([key, range]) => (

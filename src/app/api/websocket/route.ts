@@ -5,7 +5,9 @@ import {
   broadcastHealthEvent, 
   broadcastToAllUsers, 
   getUserConnectionCount, 
-  getActiveUsersCount 
+  getActiveUsersCount,
+  getWebSocketServer,
+  userConnections 
 } from '@/lib/websocket';
 
 // API route handlers
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
         return Response.json({
           success: true,
           data: {
-            serverRunning: !!io,
+            serverRunning: !!getWebSocketServer(),
             activeUsers: getActiveUsersCount(),
             totalConnections: Array.from(userConnections.values())
               .reduce((total, sockets) => total + sockets.size, 0)

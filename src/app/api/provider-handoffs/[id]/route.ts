@@ -72,9 +72,9 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
+      const { id } = await params;
+      const { userId } = await auth();
+      if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -107,7 +107,7 @@ export async function PUT(
       })
       .from(providerHandoffs)
       .leftJoin(aiConsultations, eq(providerHandoffs.aiConsultationId, aiConsultations.id))
-      .where(eq(providerHandoffs.id, params.id))
+      .where(eq(providerHandoffs.id, id))
       .limit(1);
 
     if (existingHandoff.length === 0) {
@@ -163,7 +163,7 @@ export async function PUT(
     await db
       .update(providerHandoffs)
       .set(updateData)
-      .where(eq(providerHandoffs.id, params.id));
+      .where(eq(providerHandoffs.id, id));
 
     // Update consultation status based on handoff status
     if (status === 'accepted' && consultation) {
@@ -202,7 +202,7 @@ export async function PUT(
       .from(providerHandoffs)
       .leftJoin(aiConsultations, eq(providerHandoffs.aiConsultationId, aiConsultations.id))
       .leftJoin(healthcareProviders, eq(providerHandoffs.toHumanProviderId, healthcareProviders.id))
-      .where(eq(providerHandoffs.id, params.id))
+      .where(eq(providerHandoffs.id, id))
       .limit(1);
 
     const result = updatedHandoff[0];
@@ -248,7 +248,7 @@ export async function DELETE(
       })
       .from(providerHandoffs)
       .leftJoin(aiConsultations, eq(providerHandoffs.aiConsultationId, aiConsultations.id))
-      .where(eq(providerHandoffs.id, params.id))
+      .where(eq(providerHandoffs.id, id))
       .limit(1);
 
     if (existingHandoff.length === 0) {
@@ -284,7 +284,7 @@ export async function DELETE(
         status: 'cancelled',
         updatedAt: new Date()
       })
-      .where(eq(providerHandoffs.id, params.id));
+      .where(eq(providerHandoffs.id, id));
 
     // Return consultation to active status
     if (consultation) {

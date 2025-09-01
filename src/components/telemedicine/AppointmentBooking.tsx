@@ -12,7 +12,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
@@ -59,6 +59,7 @@ interface AIProviderData {
 
 interface AppointmentBookingProps {
   onComplete: (consultationId?: string) => void;
+  onCancel?: () => void;
 }
 
 const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete }) => {
@@ -438,36 +439,34 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ onComplete }) =
           </Card>
 
           {/* Step 4: Select Date & Time (Only for Human Providers) */}
-          {selectedProvider?.type !== 'ai' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Date</h2>
-                {/* Basic date picker for now, can be replaced with a proper calendar component */}
-                <input 
-                  type="date" 
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  min={new Date().toISOString().split('T')[0]} // Disable past dates
-                />
-              </Card>
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Time</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {timeSlots.map(slot => (
-                    <Button 
-                      key={slot}
-                      variant={selectedTime === slot ? 'default' : 'outline'}
-                      onClick={() => setSelectedTime(slot)}
-                      className="w-full"
-                    >
-                      {slot}
-                    </Button>
-                  ))}
-                </div>
-              </Card>
-            </div>
-          )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Date</h2>
+              {/* Basic date picker for now, can be replaced with a proper calendar component */}
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                min={new Date().toISOString().split('T')[0]} // Disable past dates
+              />
+            </Card>
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Time</h2>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {timeSlots.map(slot => (
+                  <Button
+                    key={slot}
+                    variant={selectedTime === slot ? 'default' : 'outline'}
+                    onClick={() => setSelectedTime(slot)}
+                    className="w-full"
+                  >
+                    {slot}
+                  </Button>
+                ))}
+              </div>
+            </Card>
+          </div>
 
           {/* Step 5: Confirmation */}
           <Card className="p-6 bg-gray-50">

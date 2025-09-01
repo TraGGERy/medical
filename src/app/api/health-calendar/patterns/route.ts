@@ -129,7 +129,7 @@ function normalizeHealthEvent(row: DbHealthEvent): HealthEvent {
     dosage: row.dosage ?? null,
     unit: row.unit ?? null,
     tags: Array.isArray(row.tags) ? row.tags : [],
-    metadata: typeof row.metadata === 'object' && row.metadata !== null ? row.metadata : {},
+    metadata: (typeof row.metadata === 'object' && row.metadata !== null ? row.metadata : {}) as Record<string, unknown>,
     createdAt: new Date(row.createdAt),
     updatedAt: new Date(row.updatedAt),
   };
