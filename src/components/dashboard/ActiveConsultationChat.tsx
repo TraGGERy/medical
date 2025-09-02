@@ -358,7 +358,24 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         createdAt: msg.createdAt
       })));
 
-      setMessages(validMessages);
+      // Only update messages if they have actually changed to prevent unnecessary re-renders
+      setMessages(prevMessages => {
+        // Compare message arrays to see if there are actual changes
+        if (prevMessages.length !== validMessages.length) {
+          return validMessages;
+        }
+        
+        // Check if any message content has changed
+        const hasChanges = validMessages.some((newMsg: Message, index: number) => {
+          const prevMsg = prevMessages[index];
+          return !prevMsg || 
+                 prevMsg.id !== newMsg.id || 
+                 prevMsg.content !== newMsg.content ||
+                 prevMsg.senderType !== newMsg.senderType;
+        });
+        
+        return hasChanges ? validMessages : prevMessages;
+      });
     } catch (error: unknown) {
       console.error('💥 Error fetching messages:', error);
       // Only show error toast for non-polling requests
@@ -467,13 +484,13 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
 
   // Continuous polling for real-time updates (works regardless of tab focus)
   useEffect(() => {
-    if (consultation && consultation.status === 'active') {
+    if (consultation && consultation.status === 'active' && !wsConnected) {
       console.log('🔄 Starting continuous polling for consultation:', consultation.id);
       
       continuousPollingRef.current = setInterval(() => {
         console.log('🔍 Continuous polling for new messages... (tab visible:', isTabVisible, ')');
         fetchMessages(consultation.id, true);
-      }, isTabVisible ? 3000 : 5000); // Poll every 3s when visible, 5s when hidden
+      }, isTabVisible ? 5000 : 10000); // Poll every 5s when visible, 10s when hidden (reduced frequency)
     } else {
       if (continuousPollingRef.current) {
         console.log('⏹️ Stopping continuous polling');
@@ -487,25 +504,26 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         clearInterval(continuousPollingRef.current);
       }
     };
-  }, [consultation, isTabVisible, fetchMessages]);
+  }, [consultation, isTabVisible, fetchMessages, wsConnected]);
 
   // Enhanced polling for AI responses
   useEffect(() => {
     console.log('🔄 AI Response Polling useEffect triggered:', {
       aiResponsePending,
       hasConsultation: !!consultation,
-      consultationId: consultation?.id
+      consultationId: consultation?.id,
+      wsConnected
     });
     
-    if (aiResponsePending && consultation) {
-      console.log('✅ Starting enhanced AI response polling every 1.5 seconds');
+    if (aiResponsePending && consultation && !wsConnected) {
+      console.log('✅ Starting enhanced AI response polling every 2 seconds');
       pollingIntervalRef.current = setInterval(() => {
         console.log('🔍 Enhanced polling for AI response...');
         fetchMessages(consultation.id, true);
-      }, 1500); // Poll every 1.5 seconds for faster AI response detection
+      }, 2000); // Poll every 2 seconds for AI response detection (slightly reduced frequency)
     } else {
       if (pollingIntervalRef.current) {
-        console.log('⏹️ Stopping AI response polling - aiResponsePending:', aiResponsePending);
+        console.log('⏹️ Stopping AI response polling - aiResponsePending:', aiResponsePending, 'wsConnected:', wsConnected);
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
       }
@@ -516,7 +534,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [aiResponsePending, consultation, fetchMessages]);
+  }, [aiResponsePending, consultation, fetchMessages, wsConnected]);
 
   // Check if AI response arrived
   useEffect(() => {
@@ -706,18 +724,30 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
           reconnectAttempts = 0; // Reset attempts on successful connection
         };
         
+        let messageUpdateTimeout: NodeJS.Timeout | null = null;
+        
         eventSource.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             console.log('📨 Real-time message received:', data);
             
             if (data.type === 'new_message') {
-              // Immediately fetch latest messages when new message arrives
-              fetchMessages(consultation.id, true);
+              // Debounce message updates to prevent rapid successive calls
+              if (messageUpdateTimeout) {
+                clearTimeout(messageUpdateTimeout);
+              }
+              messageUpdateTimeout = setTimeout(() => {
+                fetchMessages(consultation.id, true);
+              }, 300); // 300ms debounce
             } else if (data.type === 'ai_response') {
               // AI response received, stop pending state
               setAiResponsePending(false);
-              fetchMessages(consultation.id, true);
+              if (messageUpdateTimeout) {
+                clearTimeout(messageUpdateTimeout);
+              }
+              messageUpdateTimeout = setTimeout(() => {
+                fetchMessages(consultation.id, true);
+              }, 300); // 300ms debounce
             } else if (data.type === 'heartbeat') {
               // Keep connection alive
               console.log('💓 Heartbeat received');
