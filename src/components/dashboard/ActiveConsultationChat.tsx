@@ -412,7 +412,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
   };
 
   // Check if user is at bottom of chat
-  const checkIfAtBottom = () => {
+  const checkIfAtBottom = useCallback(() => {
     if (chatContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
       const threshold = 100; // 100px threshold
@@ -423,7 +423,7 @@ export default function ActiveConsultationChat({ consultationId, onConsultationE
         setShowScrollToBottom(false);
       }
     }
-  };
+  }, []);
 
   // Initialize scroll position check
   useEffect(() => {
