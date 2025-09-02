@@ -28,7 +28,82 @@ import MyAppointments from '@/components/telemedicine/MyAppointments';
 import ConsultationHistory from '@/components/dashboard/ConsultationHistory';
 import ActiveConsultationChat from '@/components/dashboard/ActiveConsultationChat';
 import HealthCalendarDashboard from '@/components/health-calendar/HealthCalendarDashboard';
-import StatCard from '@/components/ui/statcard';
+
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      className
+    )}
+    {...props}
+  />
+));
+Card.displayName = "Card";
+
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    {...props}
+  />
+));
+CardHeader.displayName = "CardHeader";
+
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn(
+      "text-2xl font-semibold leading-none tracking-tight",
+      className
+    )}
+    {...props}
+  />
+));
+CardTitle.displayName = "CardTitle";
+
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+));
+CardContent.displayName = "CardContent";
+
+const StatCard = ({ title, value, icon, description, trend }: {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  description?: string;
+  trend?: { value: number; isPositive: boolean };
+}) => {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        {trend && (
+          <p className={`text-xs ${trend.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+            {trend.isPositive ? '+' : '-'}{trend.value}% from last period
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
@@ -81,16 +156,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   }
 );
 Button.displayName = "Button";
-
-// Inline Card component to resolve module import issues
-const Card = ({ className = '', children, ...props }: { className?: string; children: React.ReactNode; [key: string]: unknown }) => {
-  return (
-    <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`} {...props}>
-      {children}
-    </div>
-  );
-};
-Card.displayName = 'Card';
 import { toast } from 'sonner';
 
 // Type definition for health report from API
