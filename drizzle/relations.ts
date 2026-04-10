@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, analysisJobs, healthAlerts, alertThresholds, notificationQueue, healthcareProviders, providerReviews, telemedicineAppointments, realtimeHealthData, userPrivacySettings, websocketConnections, providerAvailability, prescriptions, healthReports, userAnalytics, userMedicalHistory, chatSessions, userSubscriptions, subscriptionPlans, consultationNotes } from "./schema";
+import { users, analysisJobs, healthAlerts, alertThresholds, notificationQueue, userPrivacySettings, websocketConnections, healthReports, userAnalytics, userMedicalHistory, chatSessions, userSubscriptions, subscriptionPlans, doctors, conversations, chatMessages } from "./schema";
 
 export const analysisJobsRelations = relations(analysisJobs, ({one}) => ({
 	user: one(users, {
@@ -13,19 +13,14 @@ export const usersRelations = relations(users, ({many}) => ({
 	healthAlerts: many(healthAlerts),
 	notificationQueues: many(notificationQueue),
 	alertThresholds: many(alertThresholds),
-	providerReviews: many(providerReviews),
-	realtimeHealthData: many(realtimeHealthData),
 	userPrivacySettings: many(userPrivacySettings),
 	websocketConnections: many(websocketConnections),
-	healthcareProviders: many(healthcareProviders),
-	prescriptions: many(prescriptions),
 	healthReports: many(healthReports),
 	userAnalytics: many(userAnalytics),
 	userMedicalHistories: many(userMedicalHistory),
 	chatSessions: many(chatSessions),
 	userSubscriptions: many(userSubscriptions),
-	consultationNotes: many(consultationNotes),
-	telemedicineAppointments: many(telemedicineAppointments),
+	conversations: many(conversations),
 }));
 
 export const healthAlertsRelations = relations(healthAlerts, ({one, many}) => ({
@@ -59,61 +54,13 @@ export const notificationQueueRelations = relations(notificationQueue, ({one}) =
 	}),
 }));
 
-export const providerReviewsRelations = relations(providerReviews, ({one}) => ({
-	healthcareProvider: one(healthcareProviders, {
-		fields: [providerReviews.providerId],
-		references: [healthcareProviders.id]
-	}),
-	user: one(users, {
-		fields: [providerReviews.patientId],
-		references: [users.id]
-	}),
-	telemedicineAppointment: one(telemedicineAppointments, {
-		fields: [providerReviews.appointmentId],
-		references: [telemedicineAppointments.id]
-	}),
-}));
+// Removed provider reviews relations as the table was deleted
 
-export const healthcareProvidersRelations = relations(healthcareProviders, ({one, many}) => ({
-	providerReviews: many(providerReviews),
-	providerAvailabilities: many(providerAvailability),
-	user: one(users, {
-		fields: [healthcareProviders.userId],
-		references: [users.id]
-	}),
-	prescriptions: many(prescriptions),
-	consultationNotes: many(consultationNotes),
-	telemedicineAppointments: many(telemedicineAppointments),
-}));
+// Removed healthcare providers relations as the table was deleted
 
-export const telemedicineAppointmentsRelations = relations(telemedicineAppointments, ({one, many}) => ({
-	providerReviews: many(providerReviews),
-	prescriptions: many(prescriptions),
-	consultationNotes: many(consultationNotes),
-	user: one(users, {
-		fields: [telemedicineAppointments.patientId],
-		references: [users.id]
-	}),
-	healthcareProvider: one(healthcareProviders, {
-		fields: [telemedicineAppointments.providerId],
-		references: [healthcareProviders.id]
-	}),
-	telemedicineAppointment: one(telemedicineAppointments, {
-		fields: [telemedicineAppointments.rescheduledFrom],
-		references: [telemedicineAppointments.id],
-		relationName: "telemedicineAppointments_rescheduledFrom_telemedicineAppointments_id"
-	}),
-	telemedicineAppointments: many(telemedicineAppointments, {
-		relationName: "telemedicineAppointments_rescheduledFrom_telemedicineAppointments_id"
-	}),
-}));
+// Removed telemedicine appointments relations as the table was deleted
 
-export const realtimeHealthDataRelations = relations(realtimeHealthData, ({one}) => ({
-	user: one(users, {
-		fields: [realtimeHealthData.userId],
-		references: [users.id]
-	}),
-}));
+// Removed realtime health data relations as the table was deleted
 
 export const userPrivacySettingsRelations = relations(userPrivacySettings, ({one}) => ({
 	user: one(users, {
@@ -129,27 +76,9 @@ export const websocketConnectionsRelations = relations(websocketConnections, ({o
 	}),
 }));
 
-export const providerAvailabilityRelations = relations(providerAvailability, ({one}) => ({
-	healthcareProvider: one(healthcareProviders, {
-		fields: [providerAvailability.providerId],
-		references: [healthcareProviders.id]
-	}),
-}));
+// Removed provider availability relations as the table was deleted
 
-export const prescriptionsRelations = relations(prescriptions, ({one}) => ({
-	telemedicineAppointment: one(telemedicineAppointments, {
-		fields: [prescriptions.appointmentId],
-		references: [telemedicineAppointments.id]
-	}),
-	healthcareProvider: one(healthcareProviders, {
-		fields: [prescriptions.providerId],
-		references: [healthcareProviders.id]
-	}),
-	user: one(users, {
-		fields: [prescriptions.patientId],
-		references: [users.id]
-	}),
-}));
+// Removed prescriptions relations as the table was deleted
 
 export const healthReportsRelations = relations(healthReports, ({one, many}) => ({
 	user: one(users, {
@@ -199,17 +128,28 @@ export const subscriptionPlansRelations = relations(subscriptionPlans, ({many}) 
 	userSubscriptions: many(userSubscriptions),
 }));
 
-export const consultationNotesRelations = relations(consultationNotes, ({one}) => ({
-	telemedicineAppointment: one(telemedicineAppointments, {
-		fields: [consultationNotes.appointmentId],
-		references: [telemedicineAppointments.id]
-	}),
-	healthcareProvider: one(healthcareProviders, {
-		fields: [consultationNotes.providerId],
-		references: [healthcareProviders.id]
-	}),
+// Removed consultation notes relations as the table was deleted
+
+// Chat Feature Relations
+export const doctorsRelations = relations(doctors, ({many}) => ({
+	conversations: many(conversations),
+}));
+
+export const conversationsRelations = relations(conversations, ({one, many}) => ({
 	user: one(users, {
-		fields: [consultationNotes.patientId],
+		fields: [conversations.userId],
 		references: [users.id]
+	}),
+	doctor: one(doctors, {
+		fields: [conversations.doctorId],
+		references: [doctors.id]
+	}),
+	chatMessages: many(chatMessages),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({one}) => ({
+	conversation: one(conversations, {
+		fields: [chatMessages.conversationId],
+		references: [conversations.id]
 	}),
 }));

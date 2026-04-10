@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
   Plus, 
-  Bot, 
   User, 
   Shield, 
   Menu, 
@@ -17,12 +16,10 @@ import {
   Bell,
   Search,
   Activity,
-  Smartphone,
-  Video,
-  Calendar,
-  Clock,
   MessageCircle,
-  FileText
+  FileText,
+  ShoppingBag,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,7 +27,6 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
   activeTab: string;
   onTabChange: (tab: string) => void;
-  activeConsultationId?: string;
 }
 
 export default function DashboardLayout({ children, activeTab, onTabChange }: DashboardLayoutProps) {
@@ -52,17 +48,12 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: Home },
-    { id: 'new-diagnostic', label: 'New Check', icon: Plus },
-    { id: 'health-calendar', label: 'Health Calendar', icon: Calendar },
-    { id: 'active-chat', label: 'Active Chat', icon: MessageCircle },
-    { id: 'telemedicine-overview', label: 'Telemedicine', icon: Video },
-    { id: 'my-appointments', label: 'My Appointments', icon: Clock },
-    { id: 'realtime-monitoring', label: 'Real-time Monitoring', icon: Activity },
-    { id: 'device-management', label: 'Device Management', icon: Smartphone },
-    { id: 'report-viewer', label: 'Health Reports', icon: FileText },
-    { id: 'ai-consultations', label: 'AI Consultations', icon: Bot },
+    { id: 'new-diagnostic', label: 'Start Evaluation', icon: Plus },
+    { id: 'report-viewer', label: 'My Reports', icon: FileText },
+    { id: 'chat', label: 'AI Health Chat', icon: MessageCircle },
+    { id: 'shop', label: 'Member Shop', icon: ShoppingBag },
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'privacy', label: 'Privacy', icon: Shield },
+    { id: 'privacy', label: 'Security', icon: Shield },
   ];
 
   const handleTabChange = (tabId: string) => {
@@ -71,7 +62,7 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="min-h-screen bg-slate-50">
       {/* Glassmorphism Sidebar */}
       <motion.aside
         initial={false}
@@ -91,7 +82,7 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
                   <span className="text-white font-bold text-lg">M</span>
                 </div>
                 <AnimatePresence>
@@ -138,8 +129,8 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
                   className={cn(
                     'w-full flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-300 group',
                     isActive
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                      : 'text-gray-700 hover:bg-white/30 hover:text-gray-900'
+                      ? 'bg-primary text-white shadow-lg shadow-teal-500/20'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-secondary'
                   )}
                   whileHover={{ scale: 1.02, x: 4 }}
                   whileTap={{ scale: 0.98 }}
@@ -235,7 +226,7 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
                       <span className="text-white font-bold text-lg">M</span>
                     </div>
                     <div className="ml-3">
@@ -264,8 +255,8 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
                       className={cn(
                         'w-full flex items-center px-4 py-3 rounded-xl font-medium transition-colors',
                         isActive
-                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? 'bg-primary text-white'
+                          : 'text-slate-700 hover:bg-slate-100'
                       )}
                     >
                       <Icon className="w-5 h-5" />
@@ -323,7 +314,7 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
                 <p className="text-sm font-medium text-gray-800">{userName}</p>
                 <p className="text-xs text-gray-600">Premium Member</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-sm">{userInitials}</span>
               </div>
             </div>
@@ -334,7 +325,8 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
       {/* Main Content */}
       <main className={cn(
         'pt-16 transition-all duration-300',
-        sidebarCollapsed ? 'ml-[80px]' : 'ml-[280px]'
+        sidebarCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[280px]',
+        'ml-0'
       )}>
         <div className="p-6">
           {children}

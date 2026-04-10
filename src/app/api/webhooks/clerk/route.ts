@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { createFreeSubscription } from '@/lib/services/subscriptionService';
+import { createOrUpdateUser } from '@/lib/services/userService';
 
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
@@ -50,9 +51,21 @@ export async function POST(req: NextRequest) {
   const eventType = evt.type;
 
   if (eventType === 'user.created') {
-    const { id: userId } = evt.data;
+    const { id: userId, email_addresses, first_name, last_name, image_url } = evt.data;
     
     try {
+      // Create user record in database
+      const clerkUser = {
+        id: userId,
+        emailAddresses: [{ emailAddress: email_addresses?.[0]?.email_address || '' }],
+        firstName: first_name as string || null,
+        lastName: last_name as string || null,
+        imageUrl: image_url as string || null
+      };
+      
+      await createOrUpdateUser(clerkUser as any);
+      console.log(`User created in database: ${userId}`);
+      
       // Create free subscription for new user
       const result = await createFreeSubscription(userId);
       

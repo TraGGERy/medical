@@ -1,666 +1,304 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Activity, 
-  FileText, 
+  TrendingDown, 
   CheckCircle, 
   Calendar,
-  TrendingUp,
+  Package,
   Heart,
-  Shield
+  ShieldCheck,
+  ChevronRight,
+  Plus,
+  ShoppingBag,
+  MessageCircle,
+  FileText,
+  User,
+  Shield,
+  Search,
+  ArrowRight,
+  Star,
+  Zap,
+  Clock
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import Button from '@/components/Button';
+import { cn } from '@/lib/utils';
+
+// Mock components for different tabs
+import ChatPage from '@/components/chat/ChatPage';
 import HealthCheckHistory from '@/components/dashboard/HealthCheckHistory';
-import NewDiagnostic from '@/components/dashboard/NewDiagnostic';
 import ReportViewer from '@/components/dashboard/ReportViewer';
 import ProfileSettings from '@/components/dashboard/ProfileSettings';
 import PrivacySettings from '@/components/dashboard/PrivacySettings';
-import SubscriptionStatus from '@/components/dashboard/SubscriptionStatus';
-import RealtimeDashboard from '@/components/RealtimeDashboard';
-import DeviceManagement from '@/components/devices/DeviceManagement';
-import TelemedicineOverview from '@/components/telemedicine/TelemedicineOverview';
-import AppointmentBooking from '@/components/telemedicine/AppointmentBooking';
-import MyAppointments from '@/components/telemedicine/MyAppointments';
-import ConsultationHistory from '@/components/dashboard/ConsultationHistory';
-import ActiveConsultationChat from '@/components/dashboard/ActiveConsultationChat';
-import HealthCalendarDashboard from '@/components/health-calendar/HealthCalendarDashboard';
-
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-));
-Card.displayName = "Card";
-
-const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
-    {...props}
-  />
-));
-CardHeader.displayName = "CardHeader";
-
-const CardTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h3
-    ref={ref}
-    className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
-      className
-    )}
-    {...props}
-  />
-));
-CardTitle.displayName = "CardTitle";
-
-const CardContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-));
-CardContent.displayName = "CardContent";
-
-const StatCard = ({ title, value, icon, description, trend }: {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  description?: string;
-  trend?: { value: number; isPositive: boolean };
-}) => {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
-        {trend && (
-          <p className={`text-xs ${trend.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-            {trend.isPositive ? '+' : '-'}{trend.value}% from last period
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
-
-const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  }
-);
-
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean
-}
-
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
-    return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      />
-    );
-  }
-);
-Button.displayName = "Button";
-import { toast } from 'sonner';
-
-// Type definition for health report from API
-interface HealthReport {
-  id: string;
-  date: string;
-  time: string;
-  condition: string;
-  status: 'Normal' | 'Attention' | 'Urgent';
-  riskLevel: string;
-  summary: string;
-  confidence: number;
-  symptoms: string[];
-  aiAnalysis: {
-    analysis?: string;
-    possibleConditions?: string[];
-    recommendations?: string[];
-    urgencyLevel?: string;
-    [key: string]: unknown;
-  };
-  recommendations: string[];
-  urgencyLevel: number;
-  followUpRequired: boolean;
-  doctorRecommended: boolean;
-  createdAt?: string;
-  fullReport: {
-    analysis?: string;
-    possibleConditions?: string[];
-    recommendations?: string[];
-    lifestyleRecommendations?: string[];
-    followUpPlan?: string[];
-    redFlags?: string;
-    documentAnalysis?: string;
-    negligenceAssessment?: string;
-    disclaimer?: string;
-    [key: string]: unknown;
-  };
-}
-
-interface DashboardStats {
-  totalReports: number;
-  normalResults: number;
-  attentionResults: number;
-  urgentResults: number;
-  reportsThisMonth: number;
-}
 
 export default function Dashboard() {
   const { user } = useUser();
-  // const router = useRouter(); // Reserved for future navigation
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedReport] = useState(null);
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [activeConsultationId, setActiveConsultationId] = useState<string | null>(null);
-  const [isLoadingLastConsultation, setIsLoadingLastConsultation] = useState(false);
 
-  const loadLastActiveConsultation = useCallback(async () => {
-    if (activeTab === 'active-chat' && !activeConsultationId && !isLoadingLastConsultation) {
-      console.log('🔄 Dashboard - Auto-loading last active consultation');
-      setIsLoadingLastConsultation(true);
-      
-      try {
-        const response = await fetch('/api/ai-consultations/last-active');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.consultation) {
-            console.log('✅ Dashboard - Found last active consultation:', data.consultation.id);
-            setActiveConsultationId(data.consultation.id);
-            toast.success('Resumed your last consultation');
-          } else {
-            console.log('ℹ️ Dashboard - No active consultation found');
-          }
-        } else {
-          console.error('❌ Dashboard - Failed to fetch last consultation:', response.status);
-        }
-      } catch (error) {
-        console.error('❌ Dashboard - Error loading last consultation:', error);
-      } finally {
-        setIsLoadingLastConsultation(false);
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+  };
+
+  const handleBuy = async (priceId: string) => {
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priceId }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
       }
+    } catch (error) {
+      console.error('Checkout error:', error);
     }
-  }, [activeTab, activeConsultationId, isLoadingLastConsultation]);
-
-  // Auto-load last active consultation when switching to active-chat tab
-  useEffect(() => {
-    loadLastActiveConsultation();
-  }, [loadLastActiveConsultation]);
-
-  const handleBookAppointment = () => {
-    setBookingLoading(true);
-    // Simulate loading for better UX
-    setTimeout(() => {
-      setShowBookingForm(true);
-      setBookingLoading(false);
-    }, 300);
-  };
-
-  const handleBookingComplete = (consultationId?: string) => {
-    console.log('🎯 Dashboard - handleBookingComplete called:', {
-      consultationId,
-      timestamp: new Date().toISOString()
-    });
-    
-    setShowBookingForm(false);
-    if (consultationId) {
-      // AI consultation started, clear any previous consultation and switch to new one
-      console.log('✅ Dashboard - Setting new consultation ID:', consultationId);
-      setActiveConsultationId(consultationId);
-      console.log('🔄 Dashboard - Switching to active-chat tab');
-      setActiveTab('active-chat');
-      toast.success('New AI consultation started!');
-      console.log('📱 Dashboard - State updated successfully');
-    } else {
-      // Regular appointment booked
-      console.log('📅 Dashboard - Regular appointment booked');
-      toast.success('Appointment booked successfully!');
-    }
-  };
-
-  const handleCancelBooking = () => {
-    setShowBookingForm(false);
-    setBookingLoading(false);
   };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <DashboardOverview onStartDiagnostic={() => setActiveTab('new-diagnostic')} />;
-      case 'history':
-        return <HealthCheckHistory />;
-      case 'consultation-history':
-        return (
-          <ConsultationHistory 
-            onResumeChat={(consultationId) => {
-              setActiveConsultationId(consultationId);
-              setActiveTab('active-chat');
-            }}
-          />
-        );
+        return <DashboardOverview onStartQuiz={() => window.location.href = '/health-check'} onTabChange={setActiveTab} />;
       case 'new-diagnostic':
-        return <NewDiagnostic onComplete={() => setActiveTab('history')} />;
-      case 'health-calendar':
-        return <HealthCalendarDashboard />;
-      case 'telemedicine-overview':
-        if (showBookingForm) {
-          return (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={handleCancelBooking}
-                  className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to Overview
-                </button>
-              </div>
-              <AppointmentBooking 
-                 onComplete={handleBookingComplete} 
-                 onCancel={handleCancelBooking}
-               />
-            </div>
-          );
-        }
-        return (
-          <TelemedicineOverview 
-            onBookAppointment={handleBookAppointment}
-            bookingLoading={bookingLoading}
-          />
-        );
-      case 'my-appointments':
-        return (
-          <MyAppointments 
-            onResumeChat={(consultationId) => {
-              console.log('🎯 Dashboard - MyAppointments onResumeChat called:', consultationId);
-              setActiveConsultationId(consultationId);
-              setActiveTab('active-chat');
-            }}
-          />
-        );
-
-      case 'realtime-monitoring':
-        return <RealtimeDashboard userId={user?.id || ''} className="p-6" />;
-      case 'device-management':
-        return <DeviceManagement />;
+        window.location.href = '/health-check';
+        return null;
+      case 'chat':
+        return <ChatPage />;
+      case 'shop':
+        return <MemberShop onBuy={handleBuy} />;
       case 'report-viewer':
-        return <ReportViewer report={selectedReport} onBack={() => setActiveTab('history')} />;
+        return <HealthCheckHistory />;
       case 'profile':
         return <ProfileSettings />;
-
       case 'privacy':
         return <PrivacySettings />;
-      case 'active-chat':
-        console.log('🎬 Dashboard - Rendering active-chat tab:', {
-          activeConsultationId,
-          hasConsultationId: !!activeConsultationId,
-          timestamp: new Date().toISOString()
-        });
-        
-        if (activeConsultationId) {
-          console.log('✅ Dashboard - Rendering ActiveConsultationChat with ID:', activeConsultationId);
-          return (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-900">Active Consultation</h1>
-                <Button 
-                  onClick={() => {
-                    console.log('🔚 Dashboard - Ending chat manually');
-                    setActiveConsultationId(null);
-                  }}
-                  variant="outline"
-                >
-                  Back to Chat List
-                </Button>
-              </div>
-              <ActiveConsultationChat 
-                consultationId={activeConsultationId}
-                onConsultationEnd={() => {
-                  console.log('🏁 Dashboard - Consultation ended via callback');
-                  setActiveConsultationId(null);
-                }}
-              />
-            </div>
-          );
-        }
-        console.log('⚠️ Dashboard - No active consultation ID, showing consultation list');
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-gray-900">Active Chats</h1>
-            </div>
-            <ConsultationHistory 
-              onResumeChat={(consultationId) => {
-                setActiveConsultationId(consultationId);
-              }}
-            />
-          </div>
-        );
       default:
-        return <DashboardOverview onStartDiagnostic={() => setActiveTab('new-diagnostic')} />;
+        return <DashboardOverview onStartQuiz={() => window.location.href = '/health-check'} onTabChange={setActiveTab} />;
     }
   };
 
   return (
-    <DashboardLayout 
-      activeTab={activeTab} 
-      onTabChange={setActiveTab}
-      activeConsultationId={activeConsultationId || undefined}
-    >
-      {renderContent()}
+    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      <div className="max-w-6xl mx-auto">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </DashboardLayout>
   );
 }
 
-function DashboardOverview({ onStartDiagnostic }: { onStartDiagnostic: () => void }) {
+function DashboardOverview({ onStartQuiz, onTabChange }: { onStartQuiz: () => void, onTabChange: (tab: string) => void }) {
   const { user } = useUser();
-  const userName = user?.firstName || user?.fullName || 'User';
-  const [reports, setReports] = useState<HealthReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalReports: 0,
-    normalResults: 0,
-    attentionResults: 0,
-    urgentResults: 0,
-    reportsThisMonth: 0
-  });
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  const healthScore = stats.totalReports > 0 
-    ? Math.round((stats.normalResults / stats.totalReports) * 100)
-    : 0;
-
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/health-reports');
-        if (response.ok) {
-          const data = await response.json();
-          setReports(data.reports || []);
-          
-          // Calculate stats from real data
-          const allReports: HealthReport[] = data.reports || [];
-          const currentMonth = new Date().getMonth();
-          const currentYear = new Date().getFullYear();
-          
-          const thisMonthReports = allReports.filter((report: HealthReport) => {
-            const reportDate = new Date(report.createdAt || report.date);
-            return reportDate.getMonth() === currentMonth && reportDate.getFullYear() === currentYear;
-          });
-
-          setStats({
-            totalReports: allReports.length,
-            normalResults: allReports.filter((r: HealthReport) => r.status?.toLowerCase() === 'normal').length,
-            attentionResults: allReports.filter((r: HealthReport) => r.status?.toLowerCase() === 'attention').length,
-            urgentResults: allReports.filter((r: HealthReport) => r.status?.toLowerCase() === 'urgent').length,
-            reportsThisMonth: thisMonthReports.length
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching reports:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchReports();
-  }, []);
-
-  const getRecentReports = (): HealthReport[] => {
-    return reports
-      .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
-      .slice(0, 3);
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  const userName = user?.firstName || 'User';
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
+    <div className="space-y-8 pb-12">
+      {/* Welcome Banner */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative overflow-hidden"
+        className="bg-secondary rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl"
       >
-        <Card className="border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-          <div className="relative z-10 p-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <motion.h1 
-                  className="text-3xl font-bold text-black mb-2"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  {getGreeting()}, {userName}!
-                </motion.h1>
-                <motion.p 
-                  className="text-gray-800 text-lg"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  Ready to take charge of today&apos;s health?
-                </motion.p>
-              </div>
-              
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4, type: 'spring' }}
-                className="hidden md:block"
-              >
-                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <Heart className="w-12 h-12 text-white" />
-                </div>
-              </motion.div>
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="text-center md:text-left">
+            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Welcome back, {userName}!</h1>
+            <p className="text-teal-100 opacity-90 max-w-md text-lg">Your health journey is in motion. Check your status or discover new wellness protocols in our member shop.</p>
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mt-8">
+               <Button onClick={onStartQuiz} className="bg-primary hover:bg-teal-400 text-white border-0 px-8 py-4 rounded-2xl shadow-lg">
+                  <Plus className="w-5 h-5 mr-2" />
+                  New Evaluation
+               </Button>
+               <Button variant="outline" onClick={() => onTabChange('chat')} className="border-white/20 hover:bg-white/10 text-white px-8 py-4 rounded-2xl">
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Ask AI Assistant
+               </Button>
             </div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="mt-6"
-            >
-              <Button 
-                size="lg" 
-                className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
-                onClick={onStartDiagnostic}
-              >
-                <Activity className="w-5 h-5 mr-2" />
-                Start New Health Check
-              </Button>
-            </motion.div>
           </div>
-          
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
-        </Card>
-      </motion.div>
-
-      {/* Stats Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Reports"
-            value={stats.totalReports}
-            icon={<FileText className="h-4 w-4" />}
-            trend={stats.totalReports > 0 ? { value: 12, isPositive: true } : { value: 0, isPositive: false }}
-          />
-          
-          <StatCard
-            title="Health Score"
-            value={`${healthScore}%`}
-            icon={<Shield className="h-4 w-4" />}
-            trend={healthScore >= 70 ? { value: 5, isPositive: true } : { value: 5, isPositive: false }}
-          />
-          
-          <StatCard
-            title="Normal Results"
-            value={stats.normalResults}
-            icon={<CheckCircle className="h-4 w-4" />}
-            trend={{ value: 8, isPositive: true }}
-          />
-          
-          <StatCard
-            title="This Month"
-            value={stats.reportsThisMonth}
-            icon={<Calendar className="h-4 w-4" />}
-            trend={stats.reportsThisMonth > 0 ? { value: 15, isPositive: true } : { value: 0, isPositive: false }}
-          />
+          <div className="hidden lg:flex flex-col space-y-4">
+             <div className="bg-white/10 p-6 rounded-3xl backdrop-blur-md border border-white/10 w-64">
+                <div className="flex items-center justify-between mb-2">
+                   <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Status</span>
+                   <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                </div>
+                <div className="text-xl font-bold font-serif">Awaiting Quiz</div>
+                <p className="text-[10px] opacity-60 mt-1">Completion time: ~5 mins</p>
+             </div>
+             <div className="bg-white/5 p-4 rounded-2xl border border-white/5 w-64">
+                <p className="text-[10px] opacity-60">MEMBERSHIP: <span className="text-primary font-bold">PREMIUM</span></p>
+             </div>
+          </div>
         </div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
       </motion.div>
 
-      {/* Subscription Status */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
-        <SubscriptionStatus />
-      </motion.div>
+      {/* Grid Status */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <StatusCard title="Active Protocols" value="0" icon={<Zap className="w-6 h-6 text-primary" />} desc="Visit shop to browse treatments." />
+         <StatusCard title="Next Evaluation" value="Ready" icon={<Activity className="w-6 h-6 text-primary" />} desc="Free for all premium members." />
+         <StatusCard title="Discreet Orders" value="None" icon={<Package className="w-6 h-6 text-slate-400" />} desc="Track your pharmacy shipments." />
+      </div>
 
-      {/* Recent Reports */}
-      {getRecentReports().length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-        >
-          <Card className="shadow-lg">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                  Recent Health Reports
-                </h2>
-                <Button variant="outline" size="sm">
-                  View All
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                {getRecentReports().map((report, index) => (
-                  <motion.div
-                    key={report.id || index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.7 + index * 0.1 }}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className={cn(
-                        'w-3 h-3 rounded-full',
-                        report.status?.toLowerCase() === 'normal' && 'bg-green-500',
-                        report.status?.toLowerCase() === 'attention' && 'bg-yellow-500',
-                        report.status?.toLowerCase() === 'urgent' && 'bg-red-500'
-                      )}></div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {report.condition || 'Health Check'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {formatDate(report.createdAt || report.date)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <span className={cn(
-                        'px-2 py-1 text-xs font-medium rounded-full',
-                        report.riskLevel?.toLowerCase() === 'low' && 'bg-green-100 text-green-800',
-                        report.riskLevel?.toLowerCase() === 'medium' && 'bg-yellow-100 text-yellow-800',
-                        report.riskLevel?.toLowerCase() === 'high' && 'bg-red-100 text-red-800'
-                      )}>
-                        {report.riskLevel || 'Unknown'} risk
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+      {/* Main Content Blocks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+         <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+               <h3 className="font-serif font-bold text-2xl text-secondary">My Health History</h3>
+               <Button variant="ghost" size="sm" onClick={() => onTabChange('report-viewer')}>View All</Button>
             </div>
-          </Card>
-        </motion.div>
-      )}
+            <div className="space-y-4">
+               <div className="flex items-center justify-center h-48 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                  <div className="text-center">
+                     <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                     <p className="text-slate-400 text-sm">No medical reports found.</p>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+               <h3 className="font-serif font-bold text-2xl text-secondary">Member Spotlight</h3>
+               <ShoppingBag className="text-primary w-6 h-6" />
+            </div>
+            <div className="space-y-4">
+               <div className="p-6 rounded-3xl bg-teal-50 border border-teal-100 flex items-center justify-between group cursor-pointer" onClick={() => onTabChange('shop')}>
+                  <div className="flex items-center space-x-4">
+                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm">
+                        <Zap className="w-6 h-6" />
+                     </div>
+                     <div>
+                        <div className="font-bold text-secondary">Advanced Weight Loss</div>
+                        <p className="text-xs text-slate-500">GLP-1 Semaglutide Protocol</p>
+                     </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-primary group-hover:translate-x-1 transition" />
+               </div>
+               <div className="p-6 rounded-3xl bg-pink-50 border border-pink-100 flex items-center justify-between group cursor-pointer" onClick={() => onTabChange('shop')}>
+                  <div className="flex items-center space-x-4">
+                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-pink-600 shadow-sm">
+                        <Heart className="w-6 h-6" />
+                     </div>
+                     <div>
+                        <div className="font-bold text-secondary">Sexual Wellness</div>
+                        <p className="text-xs text-slate-500">Personalized ED & Libido care</p>
+                     </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-pink-600 group-hover:translate-x-1 transition" />
+               </div>
+            </div>
+         </div>
+      </div>
     </div>
   );
+}
+
+function MemberShop({ onBuy }: { onBuy: (id: string) => void }) {
+   return (
+      <div className="space-y-8 pb-20">
+         <div className="flex items-center justify-between">
+            <div>
+               <h2 className="text-4xl font-serif font-bold text-secondary mb-2">Member <span className="text-primary italic">Shop</span></h2>
+               <p className="text-slate-500">Exclusively for MediScope AI members. All orders require doctor authorization.</p>
+            </div>
+            <div className="flex items-center space-x-4 bg-white p-2 rounded-2xl border border-slate-100">
+               <div className="px-4 py-2 bg-teal-50 rounded-xl text-primary font-bold text-sm flex items-center">
+                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  0 items
+               </div>
+            </div>
+         </div>
+
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <ShopItem 
+               title="Semaglutide 5mg" 
+               category="Weight Loss" 
+               price="$179" 
+               img="https://placehold.co/400x400/0d9488/ffffff?text=Semaglutide" 
+               tag="Subscription"
+               onBuy={() => onBuy('price_placeholder_semaglutide')}
+            />
+            <ShopItem 
+               title="Sildenafil 50mg" 
+               category="Men's Health" 
+               price="$49" 
+               img="https://placehold.co/400x400/0f172a/ffffff?text=Sildenafil" 
+               tag="Discreet"
+               onBuy={() => onBuy('price_placeholder_sildenafil')}
+            />
+            <ShopItem 
+               title="Tadalafil 20mg" 
+               category="Men's Health" 
+               price="$69" 
+               img="https://placehold.co/400x400/1e293b/ffffff?text=Tadalafil" 
+               tag="Daily Dose"
+               onBuy={() => onBuy('price_placeholder_tadalafil')}
+            />
+            <ShopItem 
+               title="Tirzepatide 10mg" 
+               category="Weight Loss" 
+               price="$279" 
+               img="https://placehold.co/400x400/14b8a6/ffffff?text=Tirzepatide" 
+               tag="Advanced GLP-1"
+               isPopular
+               onBuy={() => onBuy('price_placeholder_tirzepatide')}
+            />
+         </div>
+      </div>
+   )
+}
+
+function ShopItem({ title, category, price, img, tag, isPopular, onBuy }: { title: string, category: string, price: string, img: string, tag: string, isPopular?: boolean, onBuy: () => void }) {
+   return (
+      <div className={cn(
+         "group bg-white rounded-3xl overflow-hidden border transition-all cursor-pointer relative",
+         isPopular ? "border-primary shadow-xl shadow-teal-500/10" : "border-slate-100 hover:border-slate-300"
+      )}>
+         {isPopular && <div className="absolute top-4 right-4 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full z-10 uppercase tracking-widest">Best Value</div>}
+         <div className="aspect-square overflow-hidden bg-slate-50">
+            <img src={img} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+         </div>
+         <div className="p-6">
+            <div className="flex items-center justify-between mb-2">
+               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{category}</span>
+               <span className="text-[10px] font-bold text-primary bg-teal-50 px-2 py-0.5 rounded-lg uppercase">{tag}</span>
+            </div>
+            <h4 className="text-xl font-bold text-secondary mb-4">{title}</h4>
+            <div className="flex items-center justify-between">
+               <div className="text-2xl font-serif font-bold text-secondary">{price}<span className="text-xs text-slate-400 font-sans ml-1">/ mo</span></div>
+               <button onClick={onBuy} className="p-3 bg-slate-50 hover:bg-primary hover:text-white rounded-2xl transition-colors">
+                  <Plus className="w-5 h-5" />
+               </button>
+            </div>
+         </div>
+      </div>
+   )
+}
+
+function StatusCard({ title, value, icon, desc }: { title: string, value: string, icon: React.ReactNode, desc: string }) {
+  return (
+    <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-md transition group">
+       <div className="flex items-center justify-between mb-4">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{title}</span>
+          <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-teal-50 transition-colors">{icon}</div>
+       </div>
+       <div className="text-2xl font-serif font-bold text-secondary mb-1">{value}</div>
+       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+    </div>
+  )
 }

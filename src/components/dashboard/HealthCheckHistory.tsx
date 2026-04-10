@@ -182,8 +182,8 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Health Check History</h1>
-          <p className="text-gray-600">View and manage your diagnostic reports</p>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-secondary">Health Overview</h1>
+          <p className="text-slate-500 text-sm">View and manage your diagnostic history</p>
         </div>
         <div className="text-sm text-gray-500">
           Total Reports: {pagination.total || displayReports.length}
@@ -199,13 +199,13 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
               placeholder="Search reports..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base outline-none transition"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base outline-none transition bg-white"
           >
             <option value="all">All Status</option>
             <option value="normal">Normal</option>
@@ -218,7 +218,7 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
       {/* Loading State */}
       {loading && (
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your health reports...</p>
         </div>
       )}
@@ -267,10 +267,10 @@ const HealthCheckHistory: React.FC<HealthCheckHistoryProps> = ({ onViewReport })
                   <button
                     onClick={() => handleViewReport(report.id)}
                     disabled={viewingReportId === report.id}
-                    className={`px-3 sm:px-4 py-2 rounded-xl font-medium text-sm sm:text-base transition-colors flex items-center gap-2 ${
+                    className={`px-4 py-2 rounded-xl font-bold text-sm sm:text-base transition-all flex items-center gap-2 ${
                       viewingReportId === report.id
-                        ? 'bg-blue-400 text-white cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-teal-400 text-white cursor-not-allowed'
+                        : 'bg-primary text-white hover:bg-teal-400 shadow-lg shadow-teal-500/20'
                     }`}
                   >
                     {viewingReportId === report.id ? (

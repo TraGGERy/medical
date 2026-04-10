@@ -24,13 +24,14 @@ function Button({
   const baseClasses = 'font-semibold rounded-xl shadow transition-all duration-300 hover:scale-105 active:scale-95';
   
   const variantClasses = {
-    primary: 'bg-white text-blue-700 hover:bg-gray-50',
-    secondary: 'bg-blue-700 text-white hover:bg-blue-800',
-    outline: 'border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-50',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100',
-    default: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-    destructive: 'bg-red-600 text-white hover:bg-red-700'
+    primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/90',
+    outline: 'border border-primary bg-transparent text-primary hover:bg-primary/10',
+    ghost: 'bg-transparent text-foreground hover:bg-foreground/10',
+    default: 'bg-muted text-muted-foreground hover:bg-muted/80',
+    destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
   };
+
   
   const sizeClasses = {
     sm: 'px-4 py-2 text-sm',

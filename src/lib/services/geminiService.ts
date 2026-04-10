@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, Part } from '@google/generative-ai';
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
 
 export interface HealthAnalysisRequest {
   symptoms: string[];
@@ -135,22 +135,109 @@ export interface FullDiagnosticResponse {
   diagnosticType: 'full';
 }
 
+export interface PrescriptionAnalysisRequest {
+  prescriptionImage: UploadedFile;
+  patientSymptoms?: string[];
+  currentMedications?: string[];
+  allergies?: string[];
+  medicalHistory?: string;
+}
+
+export interface PrescriptionAnalysisResponse {
+  medications: {
+    name: string;
+    dosage: string;
+    frequency: string;
+    duration?: string;
+    instructions: string;
+  }[];
+  interactions: {
+    type: 'drug-drug' | 'drug-allergy' | 'drug-condition';
+    severity: 'mild' | 'moderate' | 'severe' | 'contraindicated';
+    description: string;
+    recommendation: string;
+  }[];
+  sideEffects: {
+    medication: string;
+    commonEffects: string[];
+    seriousEffects: string[];
+  }[];
+  compliance: {
+    instructions: string[];
+    warnings: string[];
+    monitoring: string[];
+  };
+  imageQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  readabilityIssues: string[];
+  disclaimer: string;
+}
+
 
 
 export class GeminiHealthService {
-  private model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-  private visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+  private model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  private visionModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+  // Rate limiting and retry logic
+  private async retryWithBackoff<T>(fn: () => Promise<T>, maxRetries: number = 3): Promise<T> {
+    let lastError: any;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        lastError = error;
+        
+        // Don't retry on non-retryable errors
+        if (error?.status === 403 || error?.status === 401) {
+          throw error;
+        }
+        
+        // For rate limiting (429), wait before retrying
+        if (error?.status === 429 && attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000; // Exponential backoff with jitter
+          console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        // If this is the last attempt or non-retryable error, throw
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // For other errors, wait a shorter time
+        const delay = 1000 * (attempt + 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    throw lastError;
+  }
 
   async analyzeSymptoms(request: HealthAnalysisRequest): Promise<HealthAnalysisResponse> {
     try {
+      if (!request.symptoms.length) {
+        throw new Error('Please enter at least one symptom for analysis.');
+      }
       const prompt = this.buildHealthAnalysisPrompt(request);
-      const result = await this.model.generateContent(prompt);
+      const result = await this.retryWithBackoff(() => this.model.generateContent(prompt));
       const response = await result.response;
       const text = response.text();
 
       return this.parseHealthAnalysisResponse(text);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing symptoms:', error);
+      
+      // Handle specific error types
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('rate limit')) {
+        throw new Error('AI service is temporarily busy due to high demand. Please wait a moment and try again.');
+      }
+      
+      if (error?.status === 403) {
+        throw new Error('AI service access is restricted. Please check your configuration.');
+      }
+      
       throw new Error('Failed to analyze symptoms. Please try again.');
     }
   }
@@ -178,10 +265,28 @@ export class GeminiHealthService {
       // Prepare content parts for multimodal input
       const parts: Part[] = [{ text: prompt }];
       
-      // Add images to the request
+      // Validate and add images to the request
       if (request.uploadedFiles) {
         for (const file of request.uploadedFiles) {
-          if (file.isImage && file.base64) {
+          if (file.isImage) {
+            // Validate image data
+            if (!file.base64) {
+              console.warn(`Image file ${file.name} missing base64 data, skipping`);
+              continue;
+            }
+            
+            // Validate MIME type
+            if (!file.type.startsWith('image/')) {
+              console.warn(`Invalid MIME type for image ${file.name}: ${file.type}`);
+              continue;
+            }
+            
+            // Check file size (Gemini has limits)
+            if (file.size > 20 * 1024 * 1024) { // 20MB limit
+              console.warn(`Image file ${file.name} too large: ${file.size} bytes`);
+              continue;
+            }
+            
             parts.push({
               inlineData: {
                 mimeType: file.type,
@@ -192,27 +297,75 @@ export class GeminiHealthService {
         }
       }
 
-      const result = await this.visionModel.generateContent(parts);
-      const response = await result.response;
-      const text = response.text();
+      // Ensure we have at least the text prompt
+      if (parts.length === 1) {
+        console.warn('No valid images found, falling back to text analysis');
+        return this.analyzeWithText(request);
+      }
 
+      const result = await this.retryWithBackoff(() => this.visionModel.generateContent(parts));
+      const response = await result.response;
+      
+      // Check if response is blocked or has safety issues
+      if (!response || !response.text) {
+        throw new Error('Vision analysis was blocked or returned empty response');
+      }
+      
+      const text = response.text();
       return this.parseFullDiagnosticResponse(text);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in vision analysis:', error);
-      throw error;
+      
+      // Handle specific error types with better messages
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('rate limit')) {
+        throw new Error('AI service is temporarily busy due to high demand. Please wait a moment and try again.');
+      }
+      
+      if (error?.status === 403) {
+        throw new Error('AI service access is restricted. Please check your configuration.');
+      }
+      
+      // Handle specific Gemini API errors
+      if (error instanceof Error) {
+        if (error.message.includes('SAFETY')) {
+          throw new Error('Image analysis was blocked due to safety concerns. Please ensure the image contains only medical content.');
+        }
+        if (error.message.includes('INVALID_ARGUMENT')) {
+          throw new Error('Invalid image format or content. Please upload a clear medical image.');
+        }
+      }
+      
+      // Fallback to text analysis if vision fails
+      console.log('Vision analysis failed, attempting text-only analysis');
+      try {
+        return await this.analyzeWithText(request);
+      } catch (fallbackError) {
+        console.error('Fallback text analysis also failed:', fallbackError);
+        throw new Error('Both vision and text analysis failed. Please try again with a different image or contact support.');
+      }
     }
   }
 
   private async analyzeWithText(request: FullDiagnosticRequest): Promise<FullDiagnosticResponse> {
     try {
       const prompt = this.buildFullDiagnosticPrompt(request);
-      const result = await this.model.generateContent(prompt);
+      const result = await this.retryWithBackoff(() => this.model.generateContent(prompt));
       const response = await result.response;
       const text = response.text();
 
       return this.parseFullDiagnosticResponse(text);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in text analysis:', error);
+      
+      // Handle specific error types
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('rate limit')) {
+        throw new Error('AI service is temporarily busy due to high demand. Please wait a moment and try again.');
+      }
+      
+      if (error?.status === 403) {
+        throw new Error('AI service access is restricted. Please check your configuration.');
+      }
+      
       throw error;
     }
   }
@@ -222,11 +375,21 @@ export class GeminiHealthService {
       const systemPrompt = this.buildChatSystemPrompt(userMedicalHistory);
       const prompt = `${systemPrompt}\n\nUser: ${message}\n\nPlease provide a helpful, accurate, and empathetic response:`;
 
-      const result = await this.model.generateContent(prompt);
+      const result = await this.retryWithBackoff(() => this.model.generateContent(prompt));
       const response = await result.response;
       return response.text();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in chat:', error);
+      
+      // Handle specific error types
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('rate limit')) {
+        throw new Error('AI service is temporarily busy due to high demand. Please wait a moment and try again.');
+      }
+      
+      if (error?.status === 403) {
+        throw new Error('AI service access is restricted. Please check your configuration.');
+      }
+      
       throw new Error('Failed to get response from AI assistant. Please try again.');
     }
   }
@@ -234,13 +397,23 @@ export class GeminiHealthService {
   async generatePredictiveHealthInsights(request: HealthPredictionRequest): Promise<HealthPrediction> {
     try {
       const prompt = this.buildPredictiveHealthPrompt(request);
-      const result = await this.model.generateContent(prompt);
+      const result = await this.retryWithBackoff(() => this.model.generateContent(prompt));
       const response = await result.response;
       const text = response.text();
 
       return this.parsePredictiveHealthResponse(text);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating predictive health insights:', error);
+      
+      // Handle specific error types
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('rate limit')) {
+        throw new Error('AI service is temporarily busy due to high demand. Please wait a moment and try again.');
+      }
+      
+      if (error?.status === 403) {
+        throw new Error('AI service access is restricted. Please check your configuration.');
+      }
+      
       throw new Error('Failed to generate predictive health insights. Please try again.');
     }
   }
@@ -248,14 +421,107 @@ export class GeminiHealthService {
   async analyzeTrends(request: TrendAnalysisRequest): Promise<TrendAnalysis> {
     try {
       const prompt = this.buildTrendAnalysisPrompt(request);
-      const result = await this.model.generateContent(prompt);
+      const result = await this.retryWithBackoff(() => this.model.generateContent(prompt));
       const response = await result.response;
       const text = response.text();
 
       return this.parseTrendAnalysisResponse(text);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing health trends:', error);
+      
+      // Handle specific error types
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('rate limit')) {
+        throw new Error('AI service is temporarily busy due to high demand. Please wait a moment and try again.');
+      }
+      
+      if (error?.status === 403) {
+        throw new Error('AI service access is restricted. Please check your configuration.');
+      }
+      
       throw new Error('Failed to analyze health trends. Please try again.');
+    }
+  }
+
+  async analyzePrescription(request: PrescriptionAnalysisRequest): Promise<PrescriptionAnalysisResponse> {
+    try {
+      // Validate prescription image
+      if (!request.prescriptionImage) {
+        throw new Error('No prescription image provided');
+      }
+      
+      if (!request.prescriptionImage.isImage) {
+        throw new Error('Uploaded file is not an image');
+      }
+      
+      if (!request.prescriptionImage.base64) {
+        throw new Error('Image data is missing or corrupted');
+      }
+      
+      // Check file size
+      if (request.prescriptionImage.size > 20 * 1024 * 1024) {
+        throw new Error('Image file is too large. Please upload an image smaller than 20MB.');
+      }
+      
+      // Validate image type
+      const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!validImageTypes.includes(request.prescriptionImage.type.toLowerCase())) {
+        throw new Error('Invalid image format. Please upload a JPEG, PNG, or WebP image.');
+      }
+      
+      const prompt = this.buildPrescriptionAnalysisPrompt(request);
+      
+      // Prepare content parts for multimodal input
+      const parts: Part[] = [{ text: prompt }];
+      
+      parts.push({
+        inlineData: {
+          mimeType: request.prescriptionImage.type,
+          data: request.prescriptionImage.base64
+        }
+      });
+
+      const result = await this.retryWithBackoff(() => this.visionModel.generateContent(parts));
+      const response = await result.response;
+      
+      if (!response || !response.text) {
+        throw new Error('Prescription analysis was blocked or returned empty response');
+      }
+      
+      const text = response.text();
+      return this.parsePrescriptionAnalysisResponse(text);
+    } catch (error: any) {
+      console.error('Error analyzing prescription:', error);
+      
+      // Handle specific error types with better messages
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('rate limit')) {
+        throw new Error('AI service is temporarily busy due to high demand. Please wait a moment and try again.');
+      }
+      
+      if (error?.status === 403) {
+        throw new Error('AI service access is restricted. Please check your configuration.');
+      }
+      
+      // Handle specific errors
+      if (error instanceof Error) {
+        if (error.message.includes('SAFETY')) {
+          throw new Error('Prescription analysis was blocked due to safety concerns. Please ensure the image contains only a valid prescription.');
+        }
+        if (error.message.includes('QUOTA_EXCEEDED')) {
+          throw new Error('API quota exceeded. Please try again later.');
+        }
+        if (error.message.includes('INVALID_ARGUMENT')) {
+          throw new Error('Invalid prescription image. Please upload a clear, readable prescription image.');
+        }
+        // Re-throw validation errors as-is
+        if (error.message.includes('No prescription image') || 
+            error.message.includes('not an image') ||
+            error.message.includes('too large') ||
+            error.message.includes('Invalid image format')) {
+          throw error;
+        }
+      }
+      
+      throw new Error('Failed to analyze prescription. Please ensure the image is clear and readable, then try again.');
     }
   }
 
@@ -279,13 +545,23 @@ export class GeminiHealthService {
         - Include appropriate medical disclaimers in recommendations
       `;
 
-      const result = await this.model.generateContent(prompt);
+      const result = await this.retryWithBackoff(() => this.model.generateContent(prompt));
       const response = await result.response;
       const text = response.text();
 
       return this.parseHealthReportResponse(text);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating health report:', error);
+      
+      // Handle specific error types
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('rate limit')) {
+        throw new Error('AI service is temporarily busy due to high demand. Please wait a moment and try again.');
+      }
+      
+      if (error?.status === 403) {
+        throw new Error('AI service access is restricted. Please check your configuration.');
+      }
+      
       throw new Error('Failed to generate health report. Please try again.');
     }
   }
@@ -301,7 +577,16 @@ export class GeminiHealthService {
           fileContext += `Content: ${file.content}\n`;
           hasUploadedReports = true;
         } else if (file.isImage) {
-          fileContext += `[Medical Image - Please analyze the visual content in relation to the symptoms]\n`;
+          // Check if this might be a prescription based on filename or metadata
+          const isPrescription = file.name.toLowerCase().includes('prescription') || 
+                               file.name.toLowerCase().includes('rx') ||
+                               file.name.toLowerCase().includes('medication');
+          
+          if (isPrescription) {
+            fileContext += `[PRESCRIPTION IMAGE - Perform detailed prescription analysis including medication extraction, drug interactions, side effects, and compliance guidelines]\n`;
+          } else {
+            fileContext += `[Medical Image - Please analyze the visual content in relation to the symptoms]\n`;
+          }
           hasUploadedReports = true;
         }
         fileContext += '\n';
@@ -370,7 +655,7 @@ export class GeminiHealthService {
       - Create a detailed follow-up plan
       - Identify red flag symptoms
       ${hasUploadedReports ? '- CRITICALLY IMPORTANT: Assess for potential medical negligence when reports are provided' : ''}
-      - Always emphasize the need for professional medical consultation
+      - Always emphasize the need for professional medical evaluation
       - Be thorough but conservative in assessments
       - If negligence is suspected, recommend seeking second opinion or legal consultation
     `;
@@ -694,6 +979,111 @@ export class GeminiHealthService {
       trends: [],
       insights: ['Insufficient data for trend analysis'],
       recommendations: ['Continue collecting health data for better insights']
+    };
+  }
+
+  private buildPrescriptionAnalysisPrompt(request: PrescriptionAnalysisRequest): string {
+    return `
+      You are an expert pharmacist and medical AI assistant analyzing a prescription image.
+      Please perform a comprehensive analysis of the uploaded prescription image.
+
+      PATIENT CONTEXT:
+      ${request.patientSymptoms ? `Current Symptoms: ${request.patientSymptoms.join(', ')}` : ''}
+      ${request.currentMedications ? `Current Medications: ${request.currentMedications.join(', ')}` : ''}
+      ${request.allergies ? `Known Allergies: ${request.allergies.join(', ')}` : ''}
+      ${request.medicalHistory ? `Medical History: ${request.medicalHistory}` : ''}
+
+      Please analyze the prescription image and provide your response in the following JSON format:
+      {
+        "medications": [
+          {
+            "name": "medication name",
+            "dosage": "dosage amount and unit",
+            "frequency": "how often to take",
+            "duration": "treatment duration if specified",
+            "instructions": "specific instructions for taking"
+          }
+        ],
+        "interactions": [
+          {
+            "type": "drug-drug|drug-allergy|drug-condition",
+            "severity": "mild|moderate|severe|contraindicated",
+            "description": "description of the interaction",
+            "recommendation": "what to do about it"
+          }
+        ],
+        "sideEffects": [
+          {
+            "medication": "medication name",
+            "commonEffects": ["common side effect 1", "common side effect 2"],
+            "seriousEffects": ["serious side effect 1", "serious side effect 2"]
+          }
+        ],
+        "compliance": {
+          "instructions": ["instruction 1", "instruction 2"],
+          "warnings": ["warning 1", "warning 2"],
+          "monitoring": ["what to monitor 1", "what to monitor 2"]
+        },
+        "imageQuality": "excellent|good|fair|poor",
+        "readabilityIssues": ["issue 1", "issue 2"],
+        "disclaimer": "Important medical disclaimer"
+      }
+
+      ANALYSIS REQUIREMENTS:
+      1. **Medication Extraction**: Carefully read all medication names, dosages, frequencies, and instructions
+      2. **Drug Interactions**: Check for interactions with current medications and known allergies
+      3. **Side Effects**: List common and serious side effects for each medication
+      4. **Compliance Guidelines**: Provide clear instructions for proper medication adherence
+      5. **Image Quality Assessment**: Evaluate the clarity and readability of the prescription
+      6. **Safety Warnings**: Highlight any critical safety concerns or contraindications
+
+      IMPORTANT GUIDELINES:
+      - If the image quality is poor, mention specific readability issues
+      - Always include appropriate medical disclaimers
+      - Prioritize patient safety in all recommendations
+      - Be thorough but conservative in assessments
+      - Recommend consulting pharmacist or doctor for clarification if needed
+      - Include monitoring requirements for medications that need it
+    `;
+  }
+
+  private parsePrescriptionAnalysisResponse(text: string): PrescriptionAnalysisResponse {
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          medications: parsed.medications || [],
+          interactions: parsed.interactions || [],
+          sideEffects: parsed.sideEffects || [],
+          compliance: parsed.compliance || {
+            instructions: ['Follow prescription instructions carefully'],
+            warnings: ['Consult healthcare provider if you experience side effects'],
+            monitoring: ['Monitor for any adverse reactions']
+          },
+          imageQuality: parsed.imageQuality || 'fair',
+          readabilityIssues: parsed.readabilityIssues || [],
+          disclaimer: parsed.disclaimer || 'This analysis is for informational purposes only. Always consult with your healthcare provider or pharmacist for medical advice.'
+        };
+      }
+    } catch (error) {
+      console.error('Error parsing prescription analysis JSON response:', error);
+    }
+
+    // Fallback parsing if JSON extraction fails
+    return {
+      medications: [],
+      interactions: [],
+      sideEffects: [],
+      compliance: {
+        instructions: ['Follow prescription instructions carefully'],
+        warnings: ['Consult healthcare provider if you experience side effects'],
+        monitoring: ['Monitor for any adverse reactions']
+      },
+      imageQuality: 'poor',
+      readabilityIssues: ['Unable to parse prescription clearly'],
+      disclaimer: 'This analysis is for informational purposes only. Always consult with your healthcare provider or pharmacist for medical advice.'
     };
   }
 }

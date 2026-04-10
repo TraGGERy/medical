@@ -187,23 +187,19 @@ export default function ProfileSettings() {
     }
   };
 
-  if (isLoading) {
-    return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your profile...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading your health profile...</p>
         </div>
       </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Profile & Health Data</h1>
-        <p className="text-gray-600">Manage your personal information and medical history</p>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-secondary">Health Profile</h1>
+          <p className="text-slate-500">Manage your personal information and medical records.</p>
       </div>
 
       {/* Personal Information */}
@@ -217,7 +213,7 @@ export default function ProfileSettings() {
               type="text"
               value={profile.firstName}
               onChange={(e) => handleProfileChange('firstName', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             />
           </div>
           
@@ -227,7 +223,7 @@ export default function ProfileSettings() {
               type="text"
               value={profile.lastName}
               onChange={(e) => handleProfileChange('lastName', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             />
           </div>
           
@@ -237,7 +233,7 @@ export default function ProfileSettings() {
               type="email"
               value={profile.email}
               onChange={(e) => handleProfileChange('email', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             />
           </div>
           
@@ -247,7 +243,7 @@ export default function ProfileSettings() {
               type="tel"
               value={profile.phone}
               onChange={(e) => handleProfileChange('phone', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             />
           </div>
           
@@ -257,7 +253,7 @@ export default function ProfileSettings() {
               type="date"
               value={profile.dateOfBirth}
               onChange={(e) => handleProfileChange('dateOfBirth', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             />
           </div>
           
@@ -266,7 +262,7 @@ export default function ProfileSettings() {
             <select
               value={profile.gender}
               onChange={(e) => handleProfileChange('gender', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -288,7 +284,7 @@ export default function ProfileSettings() {
               type="number"
               value={profile.height}
               onChange={(e) => handleProfileChange('height', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             />
           </div>
           
@@ -298,7 +294,7 @@ export default function ProfileSettings() {
               type="number"
               value={profile.weight}
               onChange={(e) => handleProfileChange('weight', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             />
           </div>
           
@@ -307,7 +303,7 @@ export default function ProfileSettings() {
             <select
               value={profile.bloodType}
               onChange={(e) => handleProfileChange('bloodType', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
             >
               <option value="">Select blood type</option>
               <option value="A+">A+</option>
@@ -376,7 +372,7 @@ export default function ProfileSettings() {
             />
             <button
               onClick={() => addItem('medications', newMedication, setNewMedication)}
-              className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-teal-400 transition-all font-bold shadow-lg shadow-teal-500/20"
             >
               Add
             </button>
@@ -412,7 +408,7 @@ export default function ProfileSettings() {
             />
             <button
               onClick={() => addItem('conditions', newCondition, setNewCondition)}
-              className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-teal-400 transition-all font-bold shadow-lg shadow-teal-500/20"
             >
               Add
             </button>
@@ -455,10 +451,10 @@ export default function ProfileSettings() {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className={`w-full sm:w-auto px-6 sm:px-8 py-3 rounded-xl font-semibold transition-all text-sm sm:text-base ${
+          className={`w-full sm:w-auto px-8 py-4 rounded-2xl font-bold transition-all text-sm sm:text-base ${
             isSaving
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-gradient-to-r from-blue-600 to-teal-500 text-white hover:shadow-lg hover:scale-105'
+              ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+              : 'bg-primary text-white hover:bg-teal-400 shadow-xl shadow-teal-500/30'
           }`}
         >
           {isSaving ? (

@@ -227,7 +227,7 @@ export default function PrivacySettings() {
       {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           <span className="ml-3 text-gray-600">Loading privacy settings...</span>
         </div>
       )}
@@ -245,8 +245,8 @@ export default function PrivacySettings() {
         <>
           {/* Header */}
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Privacy & Security Settings</h1>
-            <p className="text-gray-600">Control how your health data is stored, shared, and protected</p>
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-secondary">Security & Privacy</h1>
+            <p className="text-slate-500">Manage your health data encryption and sharing preferences.</p>
           </div>
 
       {/* Data Encryption & Security */}
@@ -272,7 +272,7 @@ export default function PrivacySettings() {
               <h3 className="font-medium text-gray-800">Two-Factor Authentication</h3>
               <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
             </div>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
+            <button className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-teal-400 transition-all font-bold shadow-lg shadow-teal-500/20">
               Enable 2FA
             </button>
           </div>
@@ -396,7 +396,7 @@ export default function PrivacySettings() {
           <select
             value={settings.dataRetention}
             onChange={(e) => handleSettingChange('dataRetention', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white"
           >
             <option value="6-months">6 months</option>
             <option value="1-year">1 year</option>
@@ -424,9 +424,9 @@ export default function PrivacySettings() {
             <button
               onClick={exportData}
               disabled={exporting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-teal-400 transition-all font-bold shadow-lg shadow-teal-500/20 disabled:opacity-50"
             >
-              {exporting ? '📥 Exporting...' : '📥 Export Data'}
+              {exporting ? 'Exporting...' : 'Export My Data'}
             </button>
           </div>
 

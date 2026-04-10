@@ -36,39 +36,33 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           {/* Logo/Brand */}
-          <div 
-            onClick={handleHome}
-            className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-teal-500 rounded-xl flex items-center justify-center mr-2 sm:mr-3">
-              <span className="text-white font-bold text-sm sm:text-lg">M</span>
-            </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">MediScope AI</h1>
-              <p className="text-xs text-gray-500 hidden sm:block">Health Diagnostics</p>
-            </div>
+        <div 
+          onClick={handleHome}
+          className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+            <span className="text-white font-bold text-sm sm:text-lg">T</span>
           </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold font-serif tracking-tight text-secondary">MediScope AI</h1>
+          </div>
+        </div>
 
           {/* Desktop Navigation Links */}
           <div className="hidden lg:flex items-center space-x-8">
-            <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
-              How It Works
+            <a href="/treatment" className="text-gray-600 hover:text-primary transition-colors font-medium">
+              Treatment
             </a>
-            <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
-              Features
-            </a>
-            <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+            <a href="/pricing" className="text-gray-600 hover:text-primary transition-colors font-medium">
               Pricing
             </a>
-            <a href="#faq" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+            <a href="/about-us" className="text-gray-600 hover:text-primary transition-colors font-medium">
+              About Us
+            </a>
+            <a href="/faqs" className="text-gray-600 hover:text-primary transition-colors font-medium">
               FAQ
             </a>
-            <button 
-              onClick={() => router.push('/telemedicine')}
-              className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
-            >
-              Telemedicine
-            </button>
+
             {isSignedIn && (
               <button 
                 onClick={() => router.push('/dashboard')}
@@ -104,9 +98,9 @@ export default function Header() {
                 </SignInButton>
                 <Button 
                   onClick={handleGetStarted}
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
-                  className="bg-gradient-to-r from-blue-600 to-teal-500 text-white hover:shadow-lg"
+                  className="px-6"
                 >
                   Get Started
                 </Button>
@@ -162,15 +156,7 @@ export default function Header() {
               >
                 FAQ
               </button>
-              <button 
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  router.push('/telemedicine');
-                }}
-                className="text-left text-gray-600 hover:text-blue-600 transition-colors font-medium py-2"
-              >
-                Telemedicine
-              </button>
+
               {isSignedIn && (
                 <button 
                   onClick={() => {
@@ -207,8 +193,8 @@ export default function Header() {
                       }}
                       afterSignOutUrl="/"
                     />
-                    <span className="ml-2 text-sm text-gray-600">
-                      {user?.firstName || 'User'}
+                    <span className="text-2xl font-serif font-bold tracking-tight text-secondary group-hover:text-primary transition-colors">
+                      MediScope <span className="text-primary italic">AI</span>
                     </span>
                   </div>
                 )}

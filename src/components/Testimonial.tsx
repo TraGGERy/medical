@@ -12,7 +12,7 @@ export default function Testimonial({ name, role, content, avatar, rating }: Tes
   return (
     <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="flex items-center mb-4">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
+        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 shadow-sm">
           {avatar}
         </div>
         <div>

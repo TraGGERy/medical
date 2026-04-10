@@ -1,497 +1,278 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
-import AuthLoadingSpinner from '@/components/AuthLoadingSpinner';
-import FeatureCard from '@/components/FeatureCard';
-import ProcessStep from '@/components/ProcessStep';
-import Testimonial from '@/components/Testimonial';
-import UrgencyBanner from '@/components/UrgencyBanner';
-import PricingCard from '@/components/PricingCard';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { 
+  ShieldCheck, 
+  Truck, 
+  Stethoscope, 
+  ArrowRight, 
+  CheckCircle2,
+  Activity,
+  Zap,
+  Star,
+  Heart,
+  User,
+  Sparkles
+} from 'lucide-react';
 import Header from '@/components/Header';
-import { cn } from '@/lib/utils';
-
-// Inline Button Component
-const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
-}>(
-  ({ className, variant = 'default', size = 'default', ...props }, ref) => {
-    const variants = {
-      default: "bg-primary text-primary-foreground hover:bg-primary/90",
-      destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-      outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-      secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-      ghost: "hover:bg-accent hover:text-accent-foreground",
-      link: "text-primary underline-offset-4 hover:underline",
-    }
-    const sizes = {
-      default: "h-10 px-4 py-2",
-      sm: "h-9 rounded-md px-3",
-      lg: "h-11 rounded-md px-8",
-      icon: "h-10 w-10",
-    }
-    return (
-      <button
-        className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-          variants[variant],
-          sizes[size],
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    )
-  }
-)
-Button.displayName = "Button"
+import Button from '@/components/Button';
+import PricingCard from '@/components/PricingCard';
+import Testimonial from '@/components/Testimonial';
+import ProcessStep from '@/components/ProcessStep';
 
 export default function HomePage() {
-  // Loading state for future use
-  // const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const router = useRouter();
-  const { isSignedIn, isLoaded } = useUser();
-
-  // Check authentication status and redirect if logged in
-  useEffect(() => {
-    if (isLoaded) {
-      if (isSignedIn) {
-        // Add a small delay for smooth transition before redirect
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 800); // 800ms delay for smooth loading animation
-        return;
-      }
-      // User is not logged in, show the landing page with smooth transition
-      setTimeout(() => {
-        setIsCheckingAuth(false);
-      }, 600); // 600ms delay for smooth loading completion
-    }
-  }, [isLoaded, isSignedIn, router]);
-
-  // Show loading spinner while checking authentication
-  if (!isLoaded || isCheckingAuth) {
-    return <AuthLoadingSpinner message="Loading your personalized experience..." />;
-  }
-
-  const handleHealthCheck = () => {
-    router.push('/health-check');
-  };
-
-  const handleEarlyAccess = () => {
-    router.push('/early-access');
-  };
-
   return (
-    <div className="min-h-screen bg-white text-gray-800 flex flex-col">
-      {/* Navigation Header */}
+    <div className="min-h-screen bg-white font-sans selection:bg-teal-100 selection:text-teal-900">
       <Header />
       
-      {/* Urgency Banner */}
-      <UrgencyBanner />
-      
-      {/* Hero Section */}
-      <header className="bg-gradient-to-r from-blue-600 to-teal-500 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20 text-center">
-          <div className="animate-fade-in-up">
-            {/* Social Proof Badge */}
-            <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-full px-3 sm:px-4 py-2 mb-4 sm:mb-6">
-              <span className="text-yellow-300 mr-2 text-sm sm:text-base">⭐⭐⭐⭐⭐</span>
-              <span className="text-xs sm:text-sm">Trusted by 50,000+ users worldwide</span>
+      <main>
+        {/* Modern Hero Section */}
+        <section className="relative pt-24 pb-32 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,_#f0fdfa_0%,_transparent_50%)] -z-10"></div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+              <motion.div 
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+              >
+                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-100 mb-6">
+                  <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+                  <span className="text-xs font-bold text-primary uppercase tracking-widest">Doctor-Led Personalized Health</span>
+                </div>
+                <h1 className="text-5xl md:text-7xl font-serif font-bold text-secondary leading-tight mb-6">
+                  Total Health <br />
+                  <span className="text-primary italic">Optimization</span>
+                </h1>
+                <p className="text-xl text-slate-600 mb-8 leading-relaxed max-w-lg">
+                  Advanced medical solutions for Weight Loss, Men's Health, and Women's Wellness. Discreet, doctor-prescribed, and delivered to your door.
+                </p>
+                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+                  <Button 
+                    size="lg" 
+                    className="px-10 py-7 text-lg rounded-2xl shadow-xl shadow-teal-500/20"
+                    onClick={() => window.location.href = '/health-check'}
+                  >
+                    Get Started
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                  <div className="flex -space-x-3 items-center">
+                     {[1,2,3,4].map(i => (
+                       <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200"></div>
+                     ))}
+                     <div className="pl-6">
+                        <div className="flex items-center text-yellow-400">
+                           <Star className="w-4 h-4 fill-current" />
+                           <Star className="w-4 h-4 fill-current" />
+                           <Star className="w-4 h-4 fill-current" />
+                           <Star className="w-4 h-4 fill-current" />
+                           <Star className="w-4 h-4 fill-current" />
+                        </div>
+                        <p className="text-xs font-bold text-slate-400">50,000+ Happy Patients</p>
+                     </div>
+                  </div>
+                </div>
+              </motion.div>
+              
+              <motion.div 
+                className="mt-16 lg:mt-0 relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1 }}
+              >
+                <div className="aspect-[4/5] bg-slate-100 rounded-[3rem] overflow-hidden relative shadow-2xl">
+                   <div className="absolute inset-0 bg-gradient-to-tr from-teal-600/20 to-transparent"></div>
+                   <div className="w-full h-full bg-teal-900 group relative">
+                      {/* Abstract placeholder that looks premium */}
+                      <div className="absolute inset-0 flex items-center justify-center p-12 text-center text-white">
+                         <div>
+                            <Activity className="w-20 h-20 mx-auto mb-6 text-primary opacity-50" />
+                            <h3 className="text-4xl font-serif font-bold mb-4">Precision Medicine</h3>
+                            <p className="text-teal-100/70 text-lg">AI-powered analytics meets licensed medical expertise.</p>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+                {/* Floating Stats */}
+                <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-2xl border border-slate-50 max-w-[200px]">
+                   <p className="text-sm font-bold text-secondary">Average Weight Loss</p>
+                   <p className="text-4xl font-serif font-bold text-primary">15-20%</p>
+                   <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-bold">Body Weight</p>
+                </div>
+              </motion.div>
             </div>
-            
-            <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-4 animate-float leading-tight">
-              Telemedicine Platform
-              <span className="text-yellow-300 block">Healthcare at Your Fingertips</span>
-            </h1>
-            <p className="text-base sm:text-lg lg:text-xl mb-4 opacity-90 max-w-3xl mx-auto">
-              Connect with qualified healthcare providers from the comfort of your home. AI-powered symptom analysis meets virtual consultations.
+          </div>
+        </section>
+
+        {/* Categories Section */}
+        <section className="py-24 bg-slate-50">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                 <h2 className="text-3xl md:text-5xl font-serif font-bold text-secondary mb-4">Specialized <span className="text-primary italic">Treatment Tracks</span></h2>
+                 <p className="text-slate-600 max-w-2xl mx-auto text-lg">Tailored medical protocols for your specific goals.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                 <CategoryCard 
+                    title="Medical Weight Loss"
+                    desc="Semaglutide & Tirzepatide (GLP-1) treatments to manage hunger and metabolism."
+                    icon={<Zap className="w-8 h-8 text-primary" />}
+                    link="/health-check"
+                 />
+                 <CategoryCard 
+                    title="Men's Health"
+                    desc="Personalized solutions for ED, hair regrowth, and testosterone optimization."
+                    icon={<User className="w-8 h-8 text-primary" />}
+                    link="/health-check"
+                 />
+                 <CategoryCard 
+                    title="Women's Wellness"
+                    desc="Comprehensive care for libido, metabolic health, and dermatological anti-aging."
+                    icon={<Heart className="w-8 h-8 text-primary" />}
+                    link="/health-check"
+                 />
+              </div>
+           </div>
+        </section>
+
+        {/* How It Works */}
+        <section id="how-it-works" className="py-24 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+             <div className="lg:grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                   <h2 className="text-4xl md:text-5xl font-serif font-bold text-secondary mb-8 leading-tight">The MediScope <br /> <span className="text-primary italic">Process</span></h2>
+                   <div className="space-y-12">
+                      <ProcessStep 
+                        step={1} 
+                        title="5-Minute Evaluation" 
+                        description="Complete our medical quiz. It's comprehensive, HIPAA-compliant, and takes minutes."
+                      />
+                      <ProcessStep 
+                        step={2} 
+                        title="Doctor Review" 
+                        description="A licensed U.S. physician reviews your records and prescribes the optimal protocol."
+                      />
+                      <ProcessStep 
+                        step={3} 
+                        title="Discreet Fast Shipping" 
+                        description="Medication is shipped from our certified pharmacies directly to your door."
+                      />
+                   </div>
+                </div>
+                <div className="mt-16 lg:mt-0 relative">
+                    <div className="bg-teal-50 rounded-[4rem] p-12 relative overflow-hidden h-[500px] flex items-center justify-center">
+                        <div className="text-center">
+                           <ShieldCheck className="w-32 h-32 text-primary/20 absolute -top-10 -right-10 rotate-12" />
+                           <div className="relative z-10">
+                              <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                                 <Stethoscope className="w-12 h-12 text-primary" />
+                              </div>
+                              <h4 className="text-2xl font-serif font-bold text-secondary mb-4">100% Doctor Managed</h4>
+                              <p className="text-slate-600 max-w-xs mx-auto">Unlike generic apps, our medicine is tailored by actual experts specifically for your unique biology.</p>
+                           </div>
+                        </div>
+                    </div>
+                </div>
+             </div>
+          </div>
+        </section>
+
+        {/* Pricing/Medications */}
+        <section id="pricing" className="py-24 bg-slate-900 text-white rounded-[4rem] mx-4 sm:mx-8 mb-24 overflow-hidden relative">
+           <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_50%,_rgba(20,184,166,0.15)_0%,_transparent_50%)]"></div>
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="text-center mb-16">
+                 <h2 className="text-3xl md:text-6xl font-serif font-bold mb-4 text-white">Transparent <span className="text-primary">Pricing</span></h2>
+                 <p className="text-teal-100/60 max-w-2xl mx-auto text-lg">No insurance needed. One flat monthly fee for your doctor, pharmacy, and support.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                 <PricingCard 
+                    title="GLP-1 Weight Loss"
+                    price="From $179"
+                    features={['Semaglutide or Tirzepatide', 'Doctor Consultation', 'Overnight Cold Shipping', 'Support Community']}
+                    buttonText="Get Started"
+                    onButtonClick={() => window.location.href = '/health-check'}
+                 />
+                 <PricingCard 
+                    title="Men's Sexual Health"
+                    price="From $49"
+                    features={['Sildenafil or Tadalafil', 'Personalized Dosages', 'Discreet Packaging', 'Pharmacy Processing']}
+                    isPopular={true}
+                    buttonText="Get Started"
+                    onButtonClick={() => window.location.href = '/health-check'}
+                 />
+                 <PricingCard 
+                    title="Wellness & Anti-Aging"
+                    price="From $79"
+                    features={['Custom Compounds', 'Dermatologist Review', 'Ongoing Optimization', 'Subscription-based refills']}
+                    buttonText="Get Started"
+                    onButtonClick={() => window.location.href = '/health-check'}
+                 />
+              </div>
+           </div>
+        </section>
+
+        {/* Trust Section */}
+        <section className="py-24">
+           <div className="max-w-7xl mx-auto px-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 opacity-50 grayscale hover:grayscale-0 transition-all">
+                 <div className="flex items-center justify-center font-bold text-slate-400 text-2xl">LEGIT SCRIPT</div>
+                 <div className="flex items-center justify-center font-bold text-slate-400 text-2xl">HIPAA SECURE</div>
+                 <div className="flex items-center justify-center font-bold text-slate-400 text-2xl">CLIA LABS</div>
+                 <div className="flex items-center justify-center font-bold text-slate-400 text-2xl">FDA REGISTERED</div>
+              </div>
+           </div>
+        </section>
+      </main>
+
+      <footer className="bg-slate-50 border-t border-slate-200 py-20">
+         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div className="col-span-1 md:col-span-2">
+               <span className="text-2xl font-serif font-bold text-secondary">MediScope <span className="text-primary italic">AI</span></span>
+               <p className="mt-4 text-slate-500 max-w-sm">Elevating medical standards for weight loss and sexual wellness through technology and clinical expertise.</p>
+            </div>
+            <div>
+               <h5 className="font-bold text-secondary mb-4 uppercase tracking-widest text-xs">Resources</h5>
+               <ul className="space-y-2 text-sm text-slate-500">
+                  <li><a href="/treatment" className="hover:text-primary transition">Treatments</a></li>
+                  <li><a href="/pricing" className="hover:text-primary transition">Pricing</a></li>
+                  <li><a href="/faqs" className="hover:text-primary transition">FAQs</a></li>
+               </ul>
+            </div>
+            <div>
+               <h5 className="font-bold text-secondary mb-4 uppercase tracking-widest text-xs">Company</h5>
+               <ul className="space-y-2 text-sm text-slate-500">
+                  <li><a href="/about-us" className="hover:text-primary transition">About Us</a></li>
+                  <li><a href="/privacy" className="hover:text-primary transition">Privacy Policy</a></li>
+                  <li><a href="/terms" className="hover:text-primary transition">Terms of Service</a></li>
+               </ul>
+            </div>
+         </div>
+         <div className="max-w-7xl mx-auto px-4 mt-16 pt-8 border-t border-slate-200 text-center">
+            <p className="text-[10px] text-slate-400 leading-relaxed max-w-4xl mx-auto">
+               MediScope AI provides technology services and connects patients with licensed healthcare providers. We do not provide medical services directly. Prescriptions are subject to medical evaluation and provider approval. Medications like Semaglutide and Sildenafil carry risks and side effects; consult with your doctor for full safety information.
             </p>
-            <p className="text-xs sm:text-sm mb-6 sm:mb-8 opacity-80 px-4">
-              ✅ Virtual Consultations • ✅ AI-Powered Analysis • ✅ HIPAA Compliant • ✅ Digital Prescriptions
-            </p>
-            
-            {/* Value Proposition */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 max-w-2xl mx-auto">
-              <p className="text-base sm:text-lg font-semibold mb-2">🎯 Complete Healthcare Solution:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm sm:text-base text-left">
-                <div>• Virtual doctor consultations</div>
-                <div>• AI symptom pre-screening</div>
-                <div>• Digital prescriptions</div>
-                <div>• Secure video calls</div>
-                <div>• 24/7 health monitoring</div>
-                <div>• Follow-up care tracking</div>
-              </div>
-            </div>
-
-            <div className="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center items-center">
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button 
-                  onClick={() => router.push('/telemedicine')}
-                  size="lg"
-                  className="animate-pulse-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto bg-green-600 hover:bg-green-700"
-                >
-                  📞 Book Virtual Consultations
-                </Button>
-                <Button 
-                  onClick={handleHealthCheck}
-                  size="lg"
-                  className="text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-                >
-                  🤖 AI Health Analysis
-                </Button>
-              </div>
-              <div className="text-xs sm:text-sm opacity-80 mt-4">
-                <p>⏰ Instant AI analysis • 📅 Same-day appointments available</p>
-                <p>💳 No credit card required for AI analysis</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="py-12 sm:py-16 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-12 animate-fade-in-up">How Our Telemedicine Platform Works</h2>
-          
-          {/* AI Analysis Flow */}
-          <div className="mb-12">
-            <h3 className="text-xl font-semibold mb-6 text-blue-600">🤖 AI-Powered Pre-Screening</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              <ProcessStep
-                step={1}
-                title="Enter Your Symptoms"
-                description="Type symptoms or upload lab reports for AI analysis."
-                delay={200}
-              />
-              <ProcessStep
-                step={2}
-                title="AI Analysis"
-                description="Advanced AI models process data and generate health insights."
-                delay={400}
-              />
-              <ProcessStep
-                step={3}
-                title="Get Recommendations"
-                description="Receive insights and recommendations for next steps."
-                delay={600}
-              />
-            </div>
-          </div>
-
-          {/* Telemedicine Flow */}
-          <div>
-            <h3 className="text-xl font-semibold mb-6 text-green-600">📞 Virtual Consultation Process</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-              <ProcessStep
-                step={1}
-                title="Book Appointment"
-                description="Schedule with certified healthcare providers based on your needs."
-                delay={200}
-              />
-              <ProcessStep
-                step={2}
-                title="Pre-Consultation"
-                description="Share AI analysis results and medical history securely."
-                delay={400}
-              />
-              <ProcessStep
-                step={3}
-                title="Virtual Visit"
-                description="Connect via secure video call for professional consultation."
-                delay={600}
-              />
-              <ProcessStep
-                step={4}
-                title="Follow-Up Care"
-                description="Receive digital prescriptions and ongoing care coordination."
-                delay={800}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="py-12 sm:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-12 animate-fade-in-up">Why Choose Our Telemedicine Platform?</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            <FeatureCard
-              icon="👨‍⚕️"
-              title="Certified Doctors"
-              description="Connect with licensed healthcare providers available 24/7."
-              delay={100}
-            />
-            <FeatureCard
-              icon="🤖"
-              title="AI-Powered Pre-Screening"
-              description="Smart symptom analysis helps doctors understand your condition faster."
-              delay={200}
-            />
-            <FeatureCard
-              icon="📱"
-              title="Seamless Experience"
-              description="Book, consult, and follow-up all from your mobile device."
-              delay={300}
-            />
-            <FeatureCard
-              icon="💊"
-              title="Digital Prescriptions"
-              description="Receive prescriptions electronically and track your medications."
-              delay={400}
-            />
-            <FeatureCard
-              icon="🔒"
-              title="HIPAA Compliant"
-              description="Bank-level security ensures your health data stays private."
-              delay={500}
-            />
-            <FeatureCard
-              icon="⚡"
-              title="Same-Day Appointments"
-              description="Get care when you need it with flexible scheduling options."
-              delay={600}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof & Testimonials */}
-      <section className="py-12 sm:py-16 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Join 50,000+ People Who Trust Our Telemedicine Platform</h2>
-            <p className="text-gray-600">Real stories from patients and healthcare providers</p>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
-            <Testimonial
-              name="Sarah Johnson"
-              role="Working Mom"
-              content="The AI pre-screening helped my doctor understand my symptoms before our video call. Got diagnosed and treated without leaving home!"
-              avatar="SJ"
-              rating={5}
-            />
-            <Testimonial
-              name="Dr. Michael Chen"
-              role="Telemedicine Provider"
-              content="The AI analysis gives me valuable insights before consultations. My patients come prepared, making our virtual visits more efficient and effective."
-              avatar="MC"
-              rating={5}
-            />
-            <Testimonial
-              name="Emma Rodriguez"
-              role="College Student"
-              content="Booked a same-day virtual appointment when I felt sick. The doctor prescribed medication digitally - so convenient and affordable!"
-              avatar="ER"
-              rating={5}
-            />
-          </div>
-
-          {/* Stats with social proof */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 text-center">
-            <div className="animate-fade-in-up">
-              <div className="text-4xl font-bold text-blue-600 mb-2">500+</div>
-              <p className="text-gray-600">Licensed Doctors</p>
-              <p className="text-xs text-gray-500">Certified healthcare providers</p>
-            </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-              <div className="text-4xl font-bold text-green-600 mb-2">15min</div>
-              <p className="text-gray-600">Average Wait Time</p>
-              <p className="text-xs text-gray-500">Quick virtual consultations</p>
-            </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-              <div className="text-4xl font-bold text-blue-600 mb-2">50K+</div>
-              <p className="text-gray-600">Patients Served</p>
-              <p className="text-xs text-gray-500">Growing telemedicine community</p>
-            </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: '600ms' }}>
-              <div className="text-4xl font-bold text-purple-600 mb-2">98%</div>
-              <p className="text-gray-600">Satisfaction Rate</p>
-              <p className="text-xs text-gray-500">Happy patients & providers</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-12 sm:py-16 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Affordable Healthcare Plans</h2>
-            <p className="text-gray-600">AI analysis + virtual consultations - choose what works for you</p>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
-            <PricingCard
-              title="AI Analysis Only"
-              price="$0"
-              features={[
-                "5 Free AI health reports per month",
-                "Basic symptom analysis",
-                "General recommendations",
-                "Email support",
-                "Health insights dashboard"
-              ]}
-              buttonText="Start Free Analysis"
-              onButtonClick={handleHealthCheck}
-            />
-            
-            <PricingCard
-              title="Telemedicine Pro"
-              price="$29.99"
-              originalPrice="$49.99"
-              features={[
-                "Unlimited AI health reports",
-                "2 Virtual consultations/month",
-                "Digital prescriptions",
-                "Priority doctor matching",
-                "Lab report analysis",
-                "24/7 chat support"
-              ]}
-              isPopular={true}
-              buttonText="Get Telemedicine Access"
-              onButtonClick={handleEarlyAccess}
-            />
-            
-            <PricingCard
-              title="Family Care Plan"
-              price="$59.99"
-              originalPrice="$99.99"
-              features={[
-                "Up to 5 family members",
-                "Unlimited consultations",
-                "Family health dashboard",
-                "Pediatric & adult care",
-                "Emergency consultation access",
-                "Dedicated family coordinator"
-              ]}
-              buttonText="Choose Family Plan"
-              onButtonClick={handleEarlyAccess}
-            />
-          </div>
-          
-          <div className="text-center mt-8">
-            <p className="text-sm text-gray-500">💳 No credit card required for free trial • Cancel anytime</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Risk Reversal & Final CTA */}
-      <section className="bg-gradient-to-r from-blue-600 to-teal-500 text-white py-12 sm:py-16 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4 animate-fade-in-up">
-            Healthcare When You Need It Most
-          </h2>
-          <p className="mb-6 text-base sm:text-lg opacity-90 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-            Don&apos;t wait for appointments. Get AI-powered health insights instantly or book a virtual consultation with certified doctors.
-          </p>
-          
-          {/* Risk Reversal */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 max-w-2xl mx-auto">
-            <h3 className="font-bold mb-4 text-base sm:text-lg">🛡️ Our Promise to You:</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm">
-              <div>✅ 5 Free AI reports monthly</div>
-              <div>✅ Licensed healthcare providers</div>
-              <div>✅ Same-day appointments</div>
-              <div>✅ HIPAA compliant & secure</div>
-              <div>✅ Digital prescriptions</div>
-              <div>✅ Cancel anytime</div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              onClick={() => router.push('/telemedicine')}
-              size="lg"
-              className="animate-pulse-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto bg-green-600 hover:bg-green-700"
-            >
-              📞 Book Virtual Consultation
-            </Button>
-            <Button 
-              onClick={handleHealthCheck}
-              size="lg"
-              className="text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto"
-            >
-              🤖 Get FREE AI Analysis
-            </Button>
-          </div>
-          
-          <div className="mt-6 text-xs sm:text-sm opacity-80 space-y-1">
-            <p>⚡ Over 200 consultations completed today</p>
-            <p>🔒 Your health data is 100% secure and private</p>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="py-12 sm:py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">Frequently Asked Questions</h2>
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="font-semibold mb-2">Is this really free?</h3>
-              <p className="text-gray-600">Yes! You get 5 free health reports every month with our Free Plan. No credit card required, no hidden fees.</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="font-semibold mb-2">How reliable is the AI analysis?</h3>
-              <p className="text-gray-600">Our AI provides educational health insights based on advanced algorithms. However, it&apos;s designed to supplement, not replace, professional medical advice. Always consult healthcare professionals for medical decisions.</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="font-semibold mb-2">Is my health data secure?</h3>
-              <p className="text-gray-600">Absolutely. We&apos;re HIPAA and GDPR compliant with bank-level encryption. Your data is never shared or sold.</p>
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="font-semibold mb-2">How long does it take?</h3>
-              <p className="text-gray-600">Most users get their complete health report in under 2 minutes. Just describe your symptoms and get instant results.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-8 sm:py-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
-            <div>
-              <h3 className="text-white font-semibold mb-4">MediScope AI</h3>
-              <p className="text-sm">AI-powered health diagnostics for everyone.</p>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><button onClick={handleHealthCheck} className="hover:text-white transition">Health Check</button></li>
-                <li><button onClick={handleEarlyAccess} className="hover:text-white transition">Early Access</button></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition">About</a></li>
-                <li><a href="/privacy" className="hover:text-white transition">Privacy</a></li>
-                <li><a href="/terms" className="hover:text-white transition">Terms</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition">Contact</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 pt-8 text-center">
-            <p>© 2025 MediScope AI. All rights reserved.</p>
-          </div>
-        </div>
+         </div>
       </footer>
     </div>
   );
+}
+
+function CategoryCard({ title, desc, icon, link }: { title: string, desc: string, icon: React.ReactNode, link: string }) {
+   return (
+      <div 
+        onClick={() => window.location.href = link}
+        className="p-8 rounded-[2.5rem] bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all cursor-pointer group"
+      >
+         <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-colors">
+            {icon}
+         </div>
+         <h3 className="text-2xl font-serif font-bold text-secondary mb-3">{title}</h3>
+         <p className="text-slate-500 text-sm leading-relaxed mb-6">{desc}</p>
+         <div className="flex items-center text-primary font-bold text-sm">
+            Learn More <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+         </div>
+      </div>
+   )
 }

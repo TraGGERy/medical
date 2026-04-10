@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Activity, Heart, TrendingUp, Calendar } from 'lucide-react';
+import { Activity, Heart, TrendingUp } from 'lucide-react';
 
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -101,7 +101,7 @@ export default function DashboardOverview({ onStartDiagnostic }: DashboardOvervi
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Next Checkup</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">7 days</div>
@@ -128,7 +128,7 @@ export default function DashboardOverview({ onStartDiagnostic }: DashboardOvervi
               <div className="flex items-center space-x-4">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">AI Consultation</p>
+                  <p className="text-sm font-medium">Health Analysis</p>
                   <p className="text-xs text-muted-foreground">1 day ago</p>
                 </div>
               </div>
@@ -151,9 +151,6 @@ export default function DashboardOverview({ onStartDiagnostic }: DashboardOvervi
           <CardContent className="space-y-4">
             <Button onClick={onStartDiagnostic} className="w-full">
               Start New Health Check
-            </Button>
-            <Button variant="outline" className="w-full">
-              Schedule Appointment
             </Button>
             <Button variant="outline" className="w-full">
               View Health Reports
