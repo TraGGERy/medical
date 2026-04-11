@@ -117,7 +117,7 @@ export default function HealthCheckPage() {
                 <div className="space-y-10">
                    <div className="text-center">
                       <h2 className="text-4xl font-serif font-bold text-secondary mb-4">Start Your <span className="text-primary italic">Transformation</span></h2>
-                      <p className="text-slate-500">Pick the path that's right for you today.</p>
+                      <p className="text-slate-500">Pick the path that&apos;s right for you today.</p>
                    </div>
                    <div className="grid grid-cols-1 gap-4">
                       <button 
@@ -146,7 +146,7 @@ export default function HealthCheckPage() {
                             </div>
                             <div className="text-left">
                                <h3 className="text-xl font-bold text-secondary">Sexual Wellness</h3>
-                               <p className="text-sm text-slate-500">Men's ED & Women's Libido care.</p>
+                               <p className="text-sm text-slate-500">Men&apos;s ED &amp; Women&apos;s Libido care.</p>
                             </div>
                          </div>
                          <ChevronRight className="w-6 h-6 text-slate-300 group-hover:text-primary transition-colors" />

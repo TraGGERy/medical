@@ -206,6 +206,24 @@ export type NewUserPrivacySettings = typeof userPrivacySettings.$inferInsert;
 
 // Removed telemedicine type exports
 
+// AI Providers table
+export const aiProviders = pgTable('ai_providers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  specialty: text('specialty').notNull(),
+  description: text('description'),
+  avatar: text('avatar'),
+  isActive: boolean('is_active').default(true),
+  isAvailable: boolean('is_available').default(true),
+  totalConsultations: integer('total_consultations').default(0),
+  rating: decimal('rating', { precision: 3, scale: 2 }).default('5.00'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type AIProvider = typeof aiProviders.$inferSelect;
+export type NewAIProvider = typeof aiProviders.$inferInsert;
+
 // Chat feature tables
 export const doctors = pgTable('doctors', {
   id: uuid('id').defaultRandom().primaryKey(),

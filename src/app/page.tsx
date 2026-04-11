@@ -46,7 +46,7 @@ export default function HomePage() {
                   <span className="text-primary italic">Optimization</span>
                 </h1>
                 <p className="text-xl text-slate-600 mb-8 leading-relaxed max-w-lg">
-                  Advanced medical solutions for Weight Loss, Men's Health, and Women's Wellness. Discreet, doctor-prescribed, and delivered to your door.
+                  Advanced medical solutions for Weight Loss, Men&apos;s Health, and Women&apos;s Wellness. Discreet, doctor-prescribed, and delivered to your door.
                 </p>
                 <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
                   <Button 

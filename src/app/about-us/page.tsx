@@ -41,7 +41,7 @@ export default function AboutPage() {
                {/* Replace with team photo or abstract med image */}
                <div className="w-full h-full flex items-center justify-center bg-teal-800 text-white p-12 text-center">
                   <div className="max-w-xs">
-                     <h3 className="text-2xl font-serif font-bold mb-4 italic">"Transforming healthcare through accessibility."</h3>
+                     <h3 className="text-2xl font-serif font-bold mb-4 italic">&ldquo;Transforming healthcare through accessibility.&rdquo;</h3>
                   </div>
                </div>
             </div>
