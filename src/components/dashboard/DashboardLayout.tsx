@@ -52,8 +52,8 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
     { id: 'report-viewer', label: 'My Reports', icon: FileText },
     { id: 'chat', label: 'AI Health Chat', icon: MessageCircle },
     { id: 'shop', label: 'Member Shop', icon: ShoppingBag },
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'privacy', label: 'Security', icon: Shield },
+    { id: 'profile', label: 'Profile Settings', icon: User },
+    // { id: 'privacy', label: 'Security', icon: Shield },
   ];
 
   const handleTabChange = (tabId: string) => {
@@ -62,28 +62,26 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Glassmorphism Sidebar */}
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* Premium Navy Sidebar */}
       <motion.aside
         initial={false}
         animate={{
           width: sidebarCollapsed ? 80 : 280,
         }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="fixed left-0 top-0 h-full bg-white/25 backdrop-blur-md border-r border-white/20 shadow-xl z-50"
+        className="hidden lg:flex flex-col h-screen sticky top-0 bg-secondary text-white shadow-2xl z-50 overflow-hidden"
       >
         <div className="flex flex-col h-full">
           {/* Logo Section */}
-          <div className="p-6 border-b border-white/10">
+          <div className="p-6 border-b border-white/5">
             <div className="flex items-center justify-between">
               <motion.div 
                 onClick={() => router.push('/')}
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
               >
-                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-lg">M</span>
+                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg border border-white/10">
+                  <span className="text-white font-bold text-lg italic">M</span>
                 </div>
                 <AnimatePresence>
                   {!sidebarCollapsed && (
@@ -91,244 +89,142 @@ export default function DashboardLayout({ children, activeTab, onTabChange }: Da
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -10 }}
-                      transition={{ duration: 0.2 }}
                       className="ml-3"
                     >
-                      <h1 className="text-lg font-bold text-gray-800">MediScope AI</h1>
-                      <p className="text-xs text-gray-600">Health Analytics</p>
+                      <h1 className="text-lg font-bold font-serif leading-none">MediScope</h1>
+                      <p className="text-[10px] text-teal-400 font-bold uppercase tracking-widest mt-1">Provider AI</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.div>
               
-              <motion.button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="p-2 rounded-lg hover:bg-white/20 transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                {sidebarCollapsed ? (
-                  <ChevronRight className="w-4 h-4 text-gray-600" />
-                ) : (
-                  <ChevronLeft className="w-4 h-4 text-gray-600" />
-                )}
-              </motion.button>
+              {!sidebarCollapsed && (
+                <button
+                    onClick={() => setSidebarCollapsed(true)}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                    <ChevronLeft className="w-4 h-4 text-white/40" />
+                </button>
+              )}
             </div>
           </div>
 
           {/* Navigation Menu */}
-          <nav className="flex-1 p-4 space-y-2">
+          <nav className="flex-1 p-4 pt-8 space-y-2">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               
               return (
-                <motion.button
+                <button
                   key={item.id}
                   onClick={() => handleTabChange(item.id)}
                   className={cn(
-                    'w-full flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-300 group',
+                    'w-full flex items-center px-4 py-4 rounded-2xl font-bold transition-all group overflow-hidden relative',
                     isActive
-                      ? 'bg-primary text-white shadow-lg shadow-teal-500/20'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-secondary'
+                      ? 'bg-primary text-white shadow-xl shadow-primary/20'
+                      : 'text-white/40 hover:text-white hover:bg-white/5'
                   )}
-                  whileHover={{ scale: 1.02, x: 4 }}
-                  whileTap={{ scale: 0.98 }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
                 >
                   <Icon className={cn(
-                    'w-5 h-5 transition-colors',
-                    isActive ? 'text-white' : 'text-gray-600 group-hover:text-gray-800'
+                    'w-5 h-5 transition-colors shrink-0',
+                    isActive ? 'text-white' : 'group-hover:text-white'
                   )} />
                   
-                  <AnimatePresence>
-                    {!sidebarCollapsed && (
-                      <motion.span
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="ml-3 text-sm"
-                      >
-                        {item.label}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                  
-                  {isActive && (
+                  {!sidebarCollapsed && (
+                    <span className="ml-4 text-sm whitespace-nowrap">{item.label}</span>
+                  )}
+
+                  {isActive && !sidebarCollapsed && (
                     <motion.div
-                      layoutId="activeTab"
-                      className="absolute right-0 w-1 h-8 bg-white rounded-l-full"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      layoutId="activeGlow"
+                      className="absolute right-0 w-1.5 h-6 bg-white rounded-l-full"
                     />
                   )}
-                </motion.button>
+                </button>
               );
             })}
           </nav>
 
           {/* User Profile Section */}
-          <div className="p-4 border-t border-white/10">
+          <div className="p-4 border-t border-white/5 mb-4">
             <div className={cn(
-              'flex items-center p-3 rounded-xl bg-white/20 hover:bg-white/30 transition-colors cursor-pointer',
-              sidebarCollapsed && 'justify-center'
+              'flex items-center p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer',
+              sidebarCollapsed && 'justify-center p-2'
             )}>
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-sm">{userInitials}</span>
+              <div className="w-10 h-10 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center text-primary font-bold shadow-inner shrink-0">
+                {userInitials}
               </div>
               
-              <AnimatePresence>
-                {!sidebarCollapsed && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="ml-3 flex-1"
-                  >
-                    <p className="text-sm font-medium text-gray-800">{userName}</p>
-                    <p className="text-xs text-gray-600">Premium Member</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {!sidebarCollapsed && (
+                <div className="ml-3 flex-1 overflow-hidden">
+                    <p className="text-sm font-bold truncate">{userName}</p>
+                    <p className="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Premium Access</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </motion.aside>
 
-      {/* Mobile Overlay */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Mobile Sidebar */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="fixed left-0 top-0 h-full w-280 bg-white/95 backdrop-blur-md border-r border-white/20 shadow-xl z-50 lg:hidden"
-          >
-            <div className="flex flex-col h-full">
-              {/* Mobile Header */}
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">M</span>
-                    </div>
-                    <div className="ml-3">
-                      <h1 className="text-lg font-bold text-gray-800">MediScope AI</h1>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <X className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Mobile Navigation */}
-              <nav className="flex-1 p-4 space-y-2">
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleTabChange(item.id)}
-                      className={cn(
-                        'w-full flex items-center px-4 py-3 rounded-xl font-medium transition-colors',
-                        isActive
-                          ? 'bg-primary text-white'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      )}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="ml-3">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+      {/* Mobile Nav Top Bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-100 z-50 flex items-center justify-between px-4">
+         <div className="flex items-center">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white mr-2">
+                <span className="font-bold text-xs italic">M</span>
             </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
-
-      {/* Top Bar */}
-      <div className={cn(
-        'fixed top-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm z-30 transition-all duration-300',
-        sidebarCollapsed ? 'left-[80px]' : 'left-[280px]'
-      )}>
-        <div className="flex items-center justify-between h-full px-6">
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="lg:hidden p-2 rounded-lg hover:bg-white/20 transition-colors"
-          >
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
-
-          {/* Search Bar */}
-          <div className="hidden md:flex items-center flex-1 max-w-md mx-4">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search health reports..."
-                className="w-full pl-10 pr-4 py-2 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Right Section */}
-          <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <motion.button
-              className="p-2 rounded-lg hover:bg-white/20 transition-colors relative"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-            </motion.button>
-
-            {/* User Avatar */}
-            <div className="flex items-center space-x-3">
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium text-gray-800">{userName}</p>
-                <p className="text-xs text-gray-600">Premium Member</p>
-              </div>
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-sm">{userInitials}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+            <h1 className="text-lg font-serif font-bold text-secondary">MediScope</h1>
+         </div>
+         <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-slate-400">
+            <Menu className="w-6 h-6" />
+         </button>
       </div>
 
-      {/* Main Content */}
-      <main className={cn(
-        'pt-16 transition-all duration-300',
-        sidebarCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[280px]',
-        'ml-0'
-      )}>
-        <div className="p-6">
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsMobileMenuOpen(false)} className="fixed inset-0 bg-secondary/80 backdrop-blur-sm z-[60] lg:hidden" />
+            <motion.aside initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', damping: 25 }} className="fixed left-0 top-0 bottom-0 w-4/5 max-w-sm bg-secondary text-white z-[70] lg:hidden p-6 shadow-2xl">
+                <div className="flex items-center justify-between mb-12">
+                   <h2 className="text-2xl font-serif font-bold">Menu</h2>
+                   <button onClick={() => setIsMobileMenuOpen(false)}><X className="w-6 h-6 text-white/40" /></button>
+                </div>
+                <nav className="space-y-4">
+                    {menuItems.map(item => (
+                        <button key={item.id} onClick={() => handleTabChange(item.id)} className={cn("w-full flex items-center p-4 rounded-2xl font-bold transition", activeTab === item.id ? "bg-primary text-white" : "text-white/40 hover:text-white")}>
+                            <item.icon className="w-5 h-5 mr-4" />
+                            {item.label}
+                        </button>
+                    ))}
+                </nav>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 pb-12">
+        {/* Desktop Header */}
+        <div className="hidden lg:flex h-20 items-center justify-between px-8 bg-white border-b border-slate-100 sticky top-0 z-40">
+           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Private Diagnostic Environment
+           </div>
+           <div className="flex items-center space-x-6">
+                <div className="p-2 text-slate-300 hover:text-primary transition cursor-pointer">
+                    <Bell className="w-5 h-5" />
+                </div>
+                <div className="h-8 w-px bg-slate-100" />
+                <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => onTabChange('profile')}>
+                    <span className="text-sm font-bold text-secondary group-hover:text-primary transition">{userName}</span>
+                    <div className="w-10 h-10 bg-slate-50 rounded-full border border-slate-100 flex items-center justify-center text-primary group-hover:border-primary transition font-bold shadow-sm">
+                        {userInitials}
+                    </div>
+                </div>
+           </div>
+        </div>
+
+        <div className="p-4 sm:p-8 pt-20 lg:pt-8 w-full max-w-7xl mx-auto">
           {children}
         </div>
       </main>
