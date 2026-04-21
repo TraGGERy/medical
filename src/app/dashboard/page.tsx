@@ -25,7 +25,8 @@ import {
   Zap,
   Clock,
   CreditCard,
-  DollarSign
+  DollarSign,
+  Sparkles
 } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Button from '@/components/Button';
