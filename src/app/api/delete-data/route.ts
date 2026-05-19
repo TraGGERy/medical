@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { healthReports, userMedicalHistory, chatSessions, userAnalytics } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
+import { buildRateLimitHeaders, enforceRateLimit } from '@/lib/security/rateLimiter';
 
 // DELETE - Delete user data
 export async function DELETE(request: NextRequest) {
@@ -11,6 +12,14 @@ export async function DELETE(request: NextRequest) {
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimit = enforceRateLimit(`delete-data:${userId}`, 10, 60 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many delete requests. Please try again later.' }, {
+        status: 429,
+        headers: buildRateLimitHeaders(rateLimit),
+      });
     }
 
     const body = await request.json();
@@ -29,7 +38,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         message: 'All user data deleted successfully' 
-      });
+      }, { headers: buildRateLimitHeaders(rateLimit) });
     } else if (type === 'reports' && reportIds && Array.isArray(reportIds)) {
       // Delete specific reports
       if (reportIds.length === 0) {
@@ -59,7 +68,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         message: `${reportIds.length} reports deleted successfully` 
-      });
+      }, { headers: buildRateLimitHeaders(rateLimit) });
     } else {
       return NextResponse.json({ 
         error: 'Invalid deletion type or missing parameters' 

@@ -3,6 +3,11 @@ import { FullDiagnosticResponse } from '@/lib/services/geminiService';
 import { auth } from '@clerk/nextjs/server';
 import { geminiHealthService } from '@/lib/services/geminiService';
 import OpenAI from 'openai';
+import { buildRateLimitHeaders, enforceRateLimit } from '@/lib/security/rateLimiter';
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_TOTAL_FILE_SIZE_BYTES = 15 * 1024 * 1024;
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -15,6 +20,14 @@ export async function POST(request: NextRequest) {
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimit = enforceRateLimit(`full-diagnostic:${userId}`, 20, 60 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many diagnostic requests. Please try again later.' }, {
+        status: 429,
+        headers: buildRateLimitHeaders(rateLimit),
+      });
     }
 
     // Parse form data for file uploads
@@ -36,6 +49,10 @@ export async function POST(request: NextRequest) {
         { error: 'Symptoms are required for analysis' },
         { status: 400 }
       );
+    }
+
+    if (files.length > MAX_FILES) {
+      return NextResponse.json({ error: `Too many files uploaded. Maximum allowed is ${MAX_FILES}.` }, { status: 400 });
     }
 
     // Process uploaded files
@@ -63,7 +80,9 @@ export async function POST(request: NextRequest) {
       analysis,
       model: aiModel === 'o3' ? 'OpenAI O3' : 'Gemini 2.5 Pro',
       timestamp: new Date().toISOString(),
-      filesProcessed: processedFiles.length
+      filesProcessed: JSON.parse(processedFiles).length
+    }, {
+      headers: buildRateLimitHeaders(rateLimit),
     });
 
   } catch (error) {
@@ -85,6 +104,8 @@ async function processUploadedFiles(files: File[]): Promise<string> {
     base64: string;
   }> = [];
   
+  let totalSize = 0;
+
   for (const file of files) {
     try {
       const fileType = file.type;
@@ -92,9 +113,15 @@ async function processUploadedFiles(files: File[]): Promise<string> {
       const fileSize = file.size;
       
       // Check file size (max 10MB)
-      if (fileSize > 10 * 1024 * 1024) {
+      if (fileSize > MAX_FILE_SIZE_BYTES) {
         console.warn(`File ${fileName} is too large (${fileSize} bytes)`);
         continue;
+      }
+
+      totalSize += fileSize;
+      if (totalSize > MAX_TOTAL_FILE_SIZE_BYTES) {
+        console.warn(`Total upload payload too large (${totalSize} bytes)`);
+        break;
       }
 
       let content = '';
@@ -117,7 +144,7 @@ async function processUploadedFiles(files: File[]): Promise<string> {
       } else if (fileType === 'text/plain' || fileType.includes('text')) {
         // Process text files
         content = await file.text();
-        fileInfo.content = content;
+        fileInfo.content = content.replace(/[\u0000-\u001F\u007F]/g, ' ').slice(0, 5000);
       } else if (fileType === 'application/pdf') {
         // For PDF files, we'll indicate they're uploaded but need special processing
         fileInfo.content = `[PDF Document: ${fileName} - ${Math.round(fileSize / 1024)}KB]`;
