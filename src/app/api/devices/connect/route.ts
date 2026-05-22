@@ -57,20 +57,23 @@ export async function POST(request: NextRequest) {
     }
     mockDeviceConnections.get(userId).push(deviceConnection);
 
+    // Obtain the base URL from env or request headers
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+
     // Simulate OAuth flow for different devices
     let authUrl = null;
     switch (deviceType) {
       case 'fitbit':
-        authUrl = `https://www.fitbit.com/oauth2/authorize?client_id=mock&redirect_uri=${encodeURIComponent('http://localhost:3001/api/devices/callback/fitbit')}&scope=activity+heartrate+sleep&response_type=code`;
+        authUrl = `https://www.fitbit.com/oauth2/authorize?client_id=mock&redirect_uri=${encodeURIComponent(`${appUrl}/api/devices/callback/fitbit`)}&scope=activity+heartrate+sleep&response_type=code`;
         break;
       case 'garmin':
-        authUrl = `https://connect.garmin.com/oauth/authorize?client_id=mock&redirect_uri=${encodeURIComponent('http://localhost:3001/api/devices/callback/garmin')}&scope=activity+heartrate&response_type=code`;
+        authUrl = `https://connect.garmin.com/oauth/authorize?client_id=mock&redirect_uri=${encodeURIComponent(`${appUrl}/api/devices/callback/garmin`)}&scope=activity+heartrate&response_type=code`;
         break;
       case 'apple_health':
         // Apple Health uses HealthKit which doesn't require OAuth
         break;
       case 'samsung_health':
-        authUrl = `https://account.samsung.com/oauth2/authorize?client_id=mock&redirect_uri=${encodeURIComponent('http://localhost:3001/api/devices/callback/samsung')}&scope=health&response_type=code`;
+        authUrl = `https://account.samsung.com/oauth2/authorize?client_id=mock&redirect_uri=${encodeURIComponent(`${appUrl}/api/devices/callback/samsung`)}&scope=health&response_type=code`;
         break;
     }
 
