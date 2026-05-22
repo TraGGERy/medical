@@ -1,5 +1,14 @@
 import * as dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Only load .env.local if we are running CLI scripts and the file exists
+if (!process.env.NEXT_RUNTIME) {
+  const envPath = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+  }
+}
 
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
