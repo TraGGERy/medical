@@ -95,7 +95,7 @@ export async function GET(
     }
 
     // Users can only access their own data
-    if (authUserId !== userId && userId !== 'sample_user') {
+    if (authUserId !== userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -106,10 +106,11 @@ export async function GET(
     const metricType = searchParams.get('metricType');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const parsedLimit = parseInt(searchParams.get('limit') || '100', 10);
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 100;
 
     // Get user's biometric data
-    let userData = mockBiometricData.get(userId) || mockBiometricData.get('sample_user') || [];
+    let userData = mockBiometricData.get(userId) || [];
 
     // Filter by metric type if specified
     if (metricType) {

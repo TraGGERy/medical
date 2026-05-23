@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { users, healthReports, userMedicalHistory, userPrivacySettings, chatSessions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { buildRateLimitHeaders, enforceRateLimit } from '@/lib/security/rateLimiter';
 
 // GET - Export all user data
 export async function GET() {
@@ -11,6 +12,14 @@ export async function GET() {
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateLimit = enforceRateLimit(`export-data:${userId}`, 5, 60 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many export requests. Please try again later.' }, {
+        status: 429,
+        headers: buildRateLimitHeaders(rateLimit),
+      });
     }
 
     // Fetch all user data
@@ -54,6 +63,7 @@ export async function GET() {
     return new NextResponse(JSON.stringify(exportData, null, 2), {
       status: 200,
       headers: {
+        ...buildRateLimitHeaders(rateLimit),
         'Content-Type': 'application/json',
         'Content-Disposition': `attachment; filename="diagnogenie-data-export-${new Date().toISOString().split('T')[0]}.json"`,
       },
